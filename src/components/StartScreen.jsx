@@ -19,7 +19,7 @@ export default function StartScreen({ onStart, justFinished, onDismissFinished }
   }
 
   const inputClass =
-    'w-full rounded-lg bg-ink-900 border border-ink-700 px-3 py-2 text-ink-50 focus:outline-none focus:border-[var(--accent)] transition-colors'
+    'w-full rounded-lg bg-[var(--ink-900)] border border-[var(--ink-700)] px-3 py-2 text-[var(--ink-50)] focus:outline-none focus:border-[var(--accent)] transition-colors'
 
   return (
     <div className="max-w-xl mx-auto px-4 py-10">
@@ -33,20 +33,20 @@ export default function StartScreen({ onStart, justFinished, onDismissFinished }
         </div>
       )}
 
-      <p className="font-display text-lg text-[var(--accent-light)] tracking-wide">75<span className="text-ink-100">HARD</span></p>
-      <h1 className="font-display text-5xl leading-none text-ink-50 mt-1 mb-2">Start your challenge</h1>
-      <p className="text-ink-300 text-sm mb-8 max-w-md">
+      <p className="font-display text-lg text-[var(--accent-light)] tracking-wide">75<span className="text-[var(--ink-100)]">HARD</span></p>
+      <h1 className="font-display text-5xl leading-none text-[var(--ink-50)] mt-1 mb-2">Start your challenge</h1>
+      <p className="text-[var(--ink-300)] text-sm mb-8 max-w-md">
         Customize the rules, or keep the classic checklist. Miss a single task and it's back to Day 1.
       </p>
 
       <div className="space-y-6">
         <div>
-          <label className="block text-sm text-ink-300 mb-1.5">Challenge name</label>
+          <label className="block text-sm text-[var(--ink-300)] mb-1.5">Challenge name</label>
           <input value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
         </div>
 
         <div>
-          <label className="block text-sm text-ink-300 mb-1.5">Length (days)</label>
+          <label className="block text-sm text-[var(--ink-300)] mb-1.5">Length (days)</label>
           <input
             type="number"
             min={1}
@@ -57,16 +57,16 @@ export default function StartScreen({ onStart, justFinished, onDismissFinished }
         </div>
 
         <div>
-          <label className="block text-sm text-ink-300 mb-1.5">Daily tasks</label>
+          <label className="block text-sm text-[var(--ink-300)] mb-1.5">Daily tasks</label>
           <ul className="space-y-2">
             {tasks.map((task) => (
               <li key={task.id} className="flex items-center gap-2">
-                <span className="flex-1 rounded-lg bg-ink-900 border border-ink-700 px-3 py-2 text-sm text-ink-50">
+                <span className="flex-1 rounded-lg bg-[var(--ink-900)] border border-[var(--ink-700)] px-3 py-2 text-sm text-[var(--ink-50)]">
                   {task.label}
                 </span>
                 <button
                   onClick={() => removeTask(task.id)}
-                  className="text-ink-400 hover:text-rose-400 px-2 transition-colors"
+                  className="text-[var(--ink-400)] hover:text-rose-400 px-2 transition-colors"
                   aria-label="Remove task"
                 >
                   ✕
@@ -80,11 +80,11 @@ export default function StartScreen({ onStart, justFinished, onDismissFinished }
               onChange={(e) => setNewTaskLabel(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addTask()}
               placeholder="Add a new daily task..."
-              className={`flex-1 text-sm placeholder:text-ink-400 ${inputClass}`}
+              className={`flex-1 text-sm placeholder:text-[var(--ink-400)] ${inputClass}`}
             />
             <button
               onClick={addTask}
-              className="rounded-lg bg-ink-800 hover:bg-ink-700 border border-ink-700 px-3 py-2 text-sm text-ink-100 transition-colors"
+              className="rounded-lg bg-[var(--ink-800)] hover:bg-[var(--ink-700)] border border-[var(--ink-700)] px-3 py-2 text-sm text-[var(--ink-100)] transition-colors"
             >
               Add
             </button>

@@ -1,8 +1,17 @@
 import { useState } from 'react'
 import { DEFAULT_TASKS } from '../lib/challenge'
 import { ACCENT_PRESETS } from '../lib/accent'
+import { BACKGROUND_PRESETS } from '../lib/background'
 
-export default function SettingsView({ challenge, onSave, onAbandonAndRestart, accentColor, onAccentChange }) {
+export default function SettingsView({
+  challenge,
+  onSave,
+  onAbandonAndRestart,
+  accentColor,
+  onAccentChange,
+  backgroundColor,
+  onBackgroundChange,
+}) {
   const [name, setName] = useState(challenge.name)
   const [lengthDays, setLengthDays] = useState(challenge.lengthDays)
   const [tasks, setTasks] = useState(challenge.tasks)
@@ -13,8 +22,6 @@ export default function SettingsView({ challenge, onSave, onAbandonAndRestart, a
     name !== challenge.name ||
     Number(lengthDays) !== challenge.lengthDays ||
     JSON.stringify(tasks) !== JSON.stringify(challenge.tasks)
-
-  const isPreset = ACCENT_PRESETS.some((p) => p.hex.toLowerCase() === accentColor.toLowerCase())
 
   function addTask() {
     const label = newTaskLabel.trim()
@@ -40,60 +47,36 @@ export default function SettingsView({ challenge, onSave, onAbandonAndRestart, a
   }
 
   const inputClass =
-    'w-full rounded-lg bg-ink-900 border border-ink-700 px-3 py-2 text-ink-50 focus:outline-none focus:border-[var(--accent)] transition-colors'
+    'w-full rounded-lg bg-[var(--ink-900)] border border-[var(--ink-700)] px-3 py-2 text-[var(--ink-50)] focus:outline-none focus:border-[var(--accent)] transition-colors'
 
   return (
     <div className="max-w-xl mx-auto px-4 py-8">
-      <h2 className="font-display text-3xl text-ink-50 mb-6">Settings</h2>
+      <h2 className="font-display text-3xl text-[var(--ink-50)] mb-6">Settings</h2>
 
       <div className="space-y-6">
-        <div>
-          <label className="block text-sm text-ink-300 mb-2">Accent color</label>
-          <div className="flex items-center gap-2.5 flex-wrap">
-            {ACCENT_PRESETS.map((preset) => {
-              const selected = preset.hex.toLowerCase() === accentColor.toLowerCase()
-              return (
-                <button
-                  key={preset.hex}
-                  onClick={() => onAccentChange(preset.hex)}
-                  title={preset.name}
-                  aria-label={preset.name}
-                  className={`w-8 h-8 rounded-full transition-transform ${selected ? 'scale-110' : 'hover:scale-105'}`}
-                  style={{
-                    backgroundColor: preset.hex,
-                    boxShadow: selected ? `0 0 0 2px #120a1f, 0 0 0 4px ${preset.hex}` : 'none',
-                  }}
-                />
-              )
-            })}
-            <label
-              title="Custom color"
-              className={`relative w-8 h-8 rounded-full border-2 border-dashed border-ink-600 flex items-center justify-center text-ink-300 text-xs cursor-pointer overflow-hidden ${
-                !isPreset ? 'border-solid' : ''
-              }`}
-              style={!isPreset ? { backgroundColor: accentColor, borderColor: accentColor, color: 'transparent' } : undefined}
-            >
-              {isPreset ? '+' : ''}
-              <input
-                type="color"
-                value={accentColor}
-                onChange={(e) => onAccentChange(e.target.value)}
-                className="absolute inset-0 opacity-0 cursor-pointer"
-              />
-            </label>
-          </div>
-          <p className="text-xs text-ink-400 mt-2">
-            Changes the accent only — the dark base theme stays the same.
-          </p>
-        </div>
+        <ColorPicker
+          label="Background color"
+          hint="Retints the dark base (surfaces, borders, text) — everything else stays the same."
+          presets={BACKGROUND_PRESETS}
+          value={backgroundColor}
+          onChange={onBackgroundChange}
+        />
+
+        <ColorPicker
+          label="Accent color"
+          hint="Changes the accent only — the dark base stays whatever you set above."
+          presets={ACCENT_PRESETS}
+          value={accentColor}
+          onChange={onAccentChange}
+        />
 
         <div>
-          <label className="block text-sm text-ink-300 mb-1.5">Challenge name</label>
+          <label className="block text-sm text-[var(--ink-300)] mb-1.5">Challenge name</label>
           <input value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
         </div>
 
         <div>
-          <label className="block text-sm text-ink-300 mb-1.5">Challenge length (days)</label>
+          <label className="block text-sm text-[var(--ink-300)] mb-1.5">Challenge length (days)</label>
           <input
             type="number"
             min={1}
@@ -101,14 +84,14 @@ export default function SettingsView({ challenge, onSave, onAbandonAndRestart, a
             onChange={(e) => setLengthDays(e.target.value)}
             className={inputClass}
           />
-          <p className="text-xs text-ink-400 mt-1">
+          <p className="text-xs text-[var(--ink-400)] mt-1">
             Changing this only applies to your current attempt going forward.
           </p>
         </div>
 
         <div>
           <div className="flex items-center justify-between mb-1.5">
-            <label className="block text-sm text-ink-300">Daily tasks</label>
+            <label className="block text-sm text-[var(--ink-300)]">Daily tasks</label>
             <button onClick={restoreDefaults} className="text-xs text-[var(--accent-light)] hover:opacity-80">
               Restore classic 75 Hard tasks
             </button>
@@ -123,7 +106,7 @@ export default function SettingsView({ challenge, onSave, onAbandonAndRestart, a
                 />
                 <button
                   onClick={() => removeTask(task.id)}
-                  className="text-ink-400 hover:text-rose-400 px-2 transition-colors"
+                  className="text-[var(--ink-400)] hover:text-rose-400 px-2 transition-colors"
                   aria-label="Remove task"
                 >
                   ✕
@@ -137,11 +120,11 @@ export default function SettingsView({ challenge, onSave, onAbandonAndRestart, a
               onChange={(e) => setNewTaskLabel(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addTask()}
               placeholder="Add a new daily task..."
-              className={`flex-1 text-sm placeholder:text-ink-400 ${inputClass}`}
+              className={`flex-1 text-sm placeholder:text-[var(--ink-400)] ${inputClass}`}
             />
             <button
               onClick={addTask}
-              className="rounded-lg bg-ink-800 hover:bg-ink-700 border border-ink-700 px-3 py-2 text-sm text-ink-100 transition-colors"
+              className="rounded-lg bg-[var(--ink-800)] hover:bg-[var(--ink-700)] border border-[var(--ink-700)] px-3 py-2 text-sm text-[var(--ink-100)] transition-colors"
             >
               Add
             </button>
@@ -151,12 +134,12 @@ export default function SettingsView({ challenge, onSave, onAbandonAndRestart, a
         <button
           onClick={save}
           disabled={!dirty}
-          className="w-full rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-strong)] disabled:bg-ink-800 disabled:text-ink-400 text-white font-medium py-2.5 transition-colors"
+          className="w-full rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-strong)] disabled:bg-[var(--ink-800)] disabled:text-[var(--ink-400)] text-white font-medium py-2.5 transition-colors"
         >
           Save changes
         </button>
 
-        <div className="pt-6 border-t border-ink-800">
+        <div className="pt-6 border-t border-[var(--ink-800)]">
           {!confirmRestart ? (
             <button onClick={() => setConfirmRestart(true)} className="text-sm text-rose-400 hover:text-rose-300">
               Give up and restart from Day 1
@@ -178,7 +161,7 @@ export default function SettingsView({ challenge, onSave, onAbandonAndRestart, a
                 </button>
                 <button
                   onClick={() => setConfirmRestart(false)}
-                  className="rounded-lg bg-ink-800 hover:bg-ink-700 text-ink-100 text-sm px-3 py-1.5 transition-colors"
+                  className="rounded-lg bg-[var(--ink-800)] hover:bg-[var(--ink-700)] text-[var(--ink-100)] text-sm px-3 py-1.5 transition-colors"
                 >
                   Cancel
                 </button>
@@ -187,6 +170,50 @@ export default function SettingsView({ challenge, onSave, onAbandonAndRestart, a
           )}
         </div>
       </div>
+    </div>
+  )
+}
+
+function ColorPicker({ label, hint, presets, value, onChange }) {
+  const isPreset = presets.some((p) => p.hex.toLowerCase() === value.toLowerCase())
+
+  return (
+    <div>
+      <label className="block text-sm text-[var(--ink-300)] mb-2">{label}</label>
+      <div className="flex items-center gap-2.5 flex-wrap">
+        {presets.map((preset) => {
+          const selected = preset.hex.toLowerCase() === value.toLowerCase()
+          return (
+            <button
+              key={preset.hex}
+              onClick={() => onChange(preset.hex)}
+              title={preset.name}
+              aria-label={preset.name}
+              className={`w-8 h-8 rounded-full transition-transform ${selected ? 'scale-110' : 'hover:scale-105'}`}
+              style={{
+                backgroundColor: preset.hex,
+                boxShadow: selected ? `0 0 0 2px var(--ink-950), 0 0 0 4px ${preset.hex}` : 'none',
+              }}
+            />
+          )
+        })}
+        <label
+          title="Custom color"
+          className={`relative w-8 h-8 rounded-full border-2 border-dashed border-[var(--ink-600)] flex items-center justify-center text-[var(--ink-300)] text-xs cursor-pointer overflow-hidden ${
+            !isPreset ? 'border-solid' : ''
+          }`}
+          style={!isPreset ? { backgroundColor: value, borderColor: value, color: 'transparent' } : undefined}
+        >
+          {isPreset ? '+' : ''}
+          <input
+            type="color"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            className="absolute inset-0 opacity-0 cursor-pointer"
+          />
+        </label>
+      </div>
+      <p className="text-xs text-[var(--ink-400)] mt-2">{hint}</p>
     </div>
   )
 }

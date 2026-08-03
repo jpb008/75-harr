@@ -30,10 +30,26 @@ html {
   --accent-a40: rgba(139, 92, 246, 0.4);
   --accent-a60: rgba(139, 92, 246, 0.6);
   --accent-a70: rgba(139, 92, 246, 0.7);
+
+  /* Background/neutral ramp — overridden at runtime from the Settings
+     background picker. Same tonal steps as the original violet scale,
+     just re-hued; defaults match that original violet. */
+  --ink-950: hsl(262, 51%, 8%);
+  --ink-900: hsl(262, 45%, 11%);
+  --ink-850: hsl(262, 45%, 13%);
+  --ink-800: hsl(262, 38%, 16%);
+  --ink-700: hsl(262, 36%, 23%);
+  --ink-600: hsl(262, 32%, 31%);
+  --ink-400: hsl(262, 22%, 46%);
+  --ink-300: hsl(262, 22%, 56%);
+  --ink-200: hsl(262, 40%, 73%);
+  --ink-100: hsl(262, 58%, 91%);
+  --ink-50: hsl(262, 100%, 97%);
 }
 
 body {
-  @apply bg-ink-950 text-ink-50;
+  background-color: var(--ink-950);
+  color: var(--ink-50);
   font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
   min-height: 100vh;
   background-image:
@@ -41,7 +57,7 @@ body {
     radial-gradient(50vw 35vh at 90% 15%, var(--accent-a08), transparent 65%);
   background-repeat: no-repeat;
   background-attachment: fixed;
-  transition: background-image 0.2s ease;
+  transition: background-color 0.2s ease, background-image 0.2s ease;
 }
 
 .font-display {
@@ -57,8 +73,8 @@ input[type='checkbox'].task-check {
   width: 1.375rem;
   height: 1.375rem;
   border-radius: 0.5rem;
-  border: 1.5px solid theme('colors.ink.600');
-  background-color: theme('colors.ink.900');
+  border: 1.5px solid var(--ink-600);
+  background-color: var(--ink-900);
   display: grid;
   place-content: center;
   cursor: pointer;

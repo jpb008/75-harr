@@ -6,13 +6,15 @@ export default function TodayView({ challenge, dayNumber, streak, todayRecord, t
   return (
     <div className="max-w-xl mx-auto px-4 py-8">
       <div className="mb-8">
-        <p className="text-slate-400 text-sm uppercase tracking-wide">{challenge.name}</p>
+        <p className="text-ink-300 text-xs uppercase tracking-[0.15em]">{challenge.name}</p>
         <div className="flex items-baseline gap-3 mt-1">
-          <h1 className="text-4xl font-bold text-white">Day {dayNumber}</h1>
-          <span className="text-slate-500">/ {challenge.lengthDays}</span>
+          <h1 className="font-display text-6xl leading-none text-ink-50">
+            Day {dayNumber}
+          </h1>
+          <span className="text-ink-400 tabular-nums">/ {challenge.lengthDays}</span>
         </div>
         <div className="flex items-center gap-4 mt-3">
-          <span className="inline-flex items-center gap-1.5 text-sm text-ember-400 font-medium">
+          <span className="inline-flex items-center gap-1.5 text-sm text-violet-400 font-medium">
             🔥 {streak} day streak
           </span>
           {todayComplete && (
@@ -23,14 +25,14 @@ export default function TodayView({ challenge, dayNumber, streak, todayRecord, t
         </div>
       </div>
 
-      <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden mb-6">
+      <div className="w-full h-1.5 bg-ink-800 rounded-full overflow-hidden mb-6">
         <div
-          className="h-full bg-ember-500 transition-all duration-300"
+          className="h-full bg-gradient-to-r from-violet-600 to-violet-400 transition-all duration-300"
           style={{ width: `${percent}%` }}
         />
       </div>
 
-      <ul className="space-y-3">
+      <ul className="space-y-2.5">
         {challenge.tasks.map((task) => {
           const checked = todayRecord.completedTaskIds.includes(task.id)
           return (
@@ -38,17 +40,17 @@ export default function TodayView({ challenge, dayNumber, streak, todayRecord, t
               <label
                 className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 cursor-pointer transition-colors ${
                   checked
-                    ? 'bg-ember-500/10 border-ember-500/40'
-                    : 'bg-slate-900 border-slate-800 hover:border-slate-700'
+                    ? 'bg-violet-500/10 border-violet-500/40'
+                    : 'bg-ink-900 border-ink-800 hover:border-ink-700'
                 }`}
               >
                 <input
                   type="checkbox"
                   checked={checked}
                   onChange={() => onToggle(task.id)}
-                  className="w-5 h-5 rounded accent-ember-500 shrink-0"
+                  className="task-check"
                 />
-                <span className={checked ? 'text-slate-300 line-through decoration-slate-500' : 'text-slate-100'}>
+                <span className={checked ? 'text-ink-200 line-through decoration-ink-500' : 'text-ink-50'}>
                   {task.label}
                 </span>
               </label>
@@ -58,12 +60,12 @@ export default function TodayView({ challenge, dayNumber, streak, todayRecord, t
       </ul>
 
       {challenge.tasks.length === 0 && (
-        <p className="text-slate-500 text-sm mt-6">
+        <p className="text-ink-400 text-sm mt-6">
           No tasks yet — add some in Settings to start checking off your day.
         </p>
       )}
 
-      <p className="text-slate-500 text-xs mt-8 text-center">
+      <p className="text-ink-400 text-xs mt-8 text-center">
         Miss any task by midnight and the challenge resets to Day 1 automatically.
       </p>
     </div>

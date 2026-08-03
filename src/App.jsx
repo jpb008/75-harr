@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useChallenge } from './hooks/useChallenge'
+import { useAccentColor } from './hooks/useAccentColor'
 import NavTabs from './components/NavTabs'
 import TodayView from './components/TodayView'
 import ProgressView from './components/ProgressView'
@@ -23,6 +24,7 @@ export default function App() {
     abandonAndRestart,
   } = useChallenge()
 
+  const [accentColor, setAccentColor] = useAccentColor()
   const [tab, setTab] = useState('today')
 
   if (!challenge) {
@@ -46,7 +48,13 @@ export default function App() {
       )}
       {tab === 'progress' && <ProgressView challenge={challenge} days={days} history={history} />}
       {tab === 'settings' && (
-        <SettingsView challenge={challenge} onSave={updateSettings} onAbandonAndRestart={abandonAndRestart} />
+        <SettingsView
+          challenge={challenge}
+          onSave={updateSettings}
+          onAbandonAndRestart={abandonAndRestart}
+          accentColor={accentColor}
+          onAccentChange={setAccentColor}
+        />
       )}
     </div>
   )

@@ -14,7 +14,7 @@ export default function TodayView({ challenge, dayNumber, streak, todayRecord, t
           <span className="text-ink-400 tabular-nums">/ {challenge.lengthDays}</span>
         </div>
         <div className="flex items-center gap-4 mt-3">
-          <span className="inline-flex items-center gap-1.5 text-sm text-violet-400 font-medium">
+          <span className="inline-flex items-center gap-1.5 text-sm text-[var(--accent-light)] font-medium">
             🔥 {streak} day streak
           </span>
           {todayComplete && (
@@ -27,7 +27,7 @@ export default function TodayView({ challenge, dayNumber, streak, todayRecord, t
 
       <div className="w-full h-1.5 bg-ink-800 rounded-full overflow-hidden mb-6">
         <div
-          className="h-full bg-gradient-to-r from-violet-600 to-violet-400 transition-all duration-300"
+          className="h-full bg-gradient-to-r from-[var(--accent-strong)] to-[var(--accent-light)] transition-all duration-300"
           style={{ width: `${percent}%` }}
         />
       </div>
@@ -40,7 +40,7 @@ export default function TodayView({ challenge, dayNumber, streak, todayRecord, t
               <label
                 className={`flex items-center gap-3 rounded-xl border px-4 py-3.5 cursor-pointer transition-colors ${
                   checked
-                    ? 'bg-violet-500/10 border-violet-500/40'
+                    ? 'bg-[var(--accent-a10)] border-[var(--accent-a40)]'
                     : 'bg-ink-900 border-ink-800 hover:border-ink-700'
                 }`}
               >

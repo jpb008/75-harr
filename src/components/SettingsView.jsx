@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { DEFAULT_TASKS } from '../lib/challenge'
+import { ACCENT_PRESETS } from '../lib/accent'
 
-export default function SettingsView({ challenge, onSave, onAbandonAndRestart }) {
+export default function SettingsView({ challenge, onSave, onAbandonAndRestart, accentColor, onAccentChange }) {
   const [name, setName] = useState(challenge.name)
   const [lengthDays, setLengthDays] = useState(challenge.lengthDays)
   const [tasks, setTasks] = useState(challenge.tasks)
@@ -12,6 +13,8 @@ export default function SettingsView({ challenge, onSave, onAbandonAndRestart })
     name !== challenge.name ||
     Number(lengthDays) !== challenge.lengthDays ||
     JSON.stringify(tasks) !== JSON.stringify(challenge.tasks)
+
+  const isPreset = ACCENT_PRESETS.some((p) => p.hex.toLowerCase() === accentColor.toLowerCase())
 
   function addTask() {
     const label = newTaskLabel.trim()
@@ -37,13 +40,53 @@ export default function SettingsView({ challenge, onSave, onAbandonAndRestart })
   }
 
   const inputClass =
-    'w-full rounded-lg bg-ink-900 border border-ink-700 px-3 py-2 text-ink-50 focus:outline-none focus:border-violet-500 transition-colors'
+    'w-full rounded-lg bg-ink-900 border border-ink-700 px-3 py-2 text-ink-50 focus:outline-none focus:border-[var(--accent)] transition-colors'
 
   return (
     <div className="max-w-xl mx-auto px-4 py-8">
       <h2 className="font-display text-3xl text-ink-50 mb-6">Settings</h2>
 
       <div className="space-y-6">
+        <div>
+          <label className="block text-sm text-ink-300 mb-2">Accent color</label>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            {ACCENT_PRESETS.map((preset) => {
+              const selected = preset.hex.toLowerCase() === accentColor.toLowerCase()
+              return (
+                <button
+                  key={preset.hex}
+                  onClick={() => onAccentChange(preset.hex)}
+                  title={preset.name}
+                  aria-label={preset.name}
+                  className={`w-8 h-8 rounded-full transition-transform ${selected ? 'scale-110' : 'hover:scale-105'}`}
+                  style={{
+                    backgroundColor: preset.hex,
+                    boxShadow: selected ? `0 0 0 2px #120a1f, 0 0 0 4px ${preset.hex}` : 'none',
+                  }}
+                />
+              )
+            })}
+            <label
+              title="Custom color"
+              className={`relative w-8 h-8 rounded-full border-2 border-dashed border-ink-600 flex items-center justify-center text-ink-300 text-xs cursor-pointer overflow-hidden ${
+                !isPreset ? 'border-solid' : ''
+              }`}
+              style={!isPreset ? { backgroundColor: accentColor, borderColor: accentColor, color: 'transparent' } : undefined}
+            >
+              {isPreset ? '+' : ''}
+              <input
+                type="color"
+                value={accentColor}
+                onChange={(e) => onAccentChange(e.target.value)}
+                className="absolute inset-0 opacity-0 cursor-pointer"
+              />
+            </label>
+          </div>
+          <p className="text-xs text-ink-400 mt-2">
+            Changes the accent only — the dark base theme stays the same.
+          </p>
+        </div>
+
         <div>
           <label className="block text-sm text-ink-300 mb-1.5">Challenge name</label>
           <input value={name} onChange={(e) => setName(e.target.value)} className={inputClass} />
@@ -66,7 +109,7 @@ export default function SettingsView({ challenge, onSave, onAbandonAndRestart })
         <div>
           <div className="flex items-center justify-between mb-1.5">
             <label className="block text-sm text-ink-300">Daily tasks</label>
-            <button onClick={restoreDefaults} className="text-xs text-violet-400 hover:text-violet-300">
+            <button onClick={restoreDefaults} className="text-xs text-[var(--accent-light)] hover:opacity-80">
               Restore classic 75 Hard tasks
             </button>
           </div>
@@ -108,7 +151,7 @@ export default function SettingsView({ challenge, onSave, onAbandonAndRestart })
         <button
           onClick={save}
           disabled={!dirty}
-          className="w-full rounded-lg bg-violet-500 hover:bg-violet-600 disabled:bg-ink-800 disabled:text-ink-400 text-white font-medium py-2.5 transition-colors"
+          className="w-full rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-strong)] disabled:bg-ink-800 disabled:text-ink-400 text-white font-medium py-2.5 transition-colors"
         >
           Save changes
         </button>

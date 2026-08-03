@@ -15,7 +15,7 @@ export default function ProgressView({ challenge, days, history }) {
   const styles = {
     done: 'bg-emerald-500/80 text-emerald-950',
     missed: 'bg-rose-500/15 text-rose-300 border border-rose-500/40',
-    today: 'bg-violet-500/15 text-violet-300 border border-violet-500/60 shadow-[0_0_0_3px_rgba(139,92,246,0.15)]',
+    today: 'bg-[var(--accent-a15)] text-[var(--accent-light)] border border-[var(--accent-a60)] shadow-[0_0_0_3px_var(--accent-a15)]',
     upcoming: 'bg-ink-900 text-ink-400 border border-ink-800',
   }
 
@@ -41,7 +41,7 @@ export default function ProgressView({ challenge, days, history }) {
       <div className="flex gap-4 text-xs text-ink-300 mb-10 flex-wrap">
         <Legend swatch="bg-emerald-500/80" label="Complete" />
         <Legend swatch="bg-rose-500/15 border border-rose-500/40" label="Missed" />
-        <Legend swatch="bg-violet-500/15 border border-violet-500/60" label="Today" />
+        <Legend swatch="bg-[var(--accent-a15)] border border-[var(--accent-a60)]" label="Today" />
         <Legend swatch="bg-ink-900 border border-ink-800" label="Upcoming" />
       </div>
 

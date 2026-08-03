@@ -19,7 +19,7 @@ export default function StartScreen({ onStart, justFinished, onDismissFinished }
   }
 
   const inputClass =
-    'w-full rounded-lg bg-ink-900 border border-ink-700 px-3 py-2 text-ink-50 focus:outline-none focus:border-violet-500 transition-colors'
+    'w-full rounded-lg bg-ink-900 border border-ink-700 px-3 py-2 text-ink-50 focus:outline-none focus:border-[var(--accent)] transition-colors'
 
   return (
     <div className="max-w-xl mx-auto px-4 py-10">
@@ -33,7 +33,7 @@ export default function StartScreen({ onStart, justFinished, onDismissFinished }
         </div>
       )}
 
-      <p className="font-display text-lg text-violet-400 tracking-wide">75<span className="text-ink-100">HARD</span></p>
+      <p className="font-display text-lg text-[var(--accent-light)] tracking-wide">75<span className="text-ink-100">HARD</span></p>
       <h1 className="font-display text-5xl leading-none text-ink-50 mt-1 mb-2">Start your challenge</h1>
       <p className="text-ink-300 text-sm mb-8 max-w-md">
         Customize the rules, or keep the classic checklist. Miss a single task and it's back to Day 1.
@@ -95,7 +95,7 @@ export default function StartScreen({ onStart, justFinished, onDismissFinished }
           onClick={() =>
             onStart({ name: name.trim() || 'My Challenge', lengthDays: Math.max(1, Number(lengthDays) || 75), tasks })
           }
-          className="w-full rounded-lg bg-violet-500 hover:bg-violet-600 text-white font-medium py-2.5 transition-colors shadow-[0_0_24px_-8px_rgba(139,92,246,0.7)]"
+          className="w-full rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white font-medium py-2.5 transition-colors shadow-[0_0_24px_-8px_var(--accent-a70)]"
         >
           Start Day 1
         </button>

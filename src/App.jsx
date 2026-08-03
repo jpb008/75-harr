@@ -2,8 +2,10 @@ import { useState } from 'react'
 import { useChallenge } from './hooks/useChallenge'
 import { useAccentColor } from './hooks/useAccentColor'
 import { useBackgroundColor } from './hooks/useBackgroundColor'
+import { useWeeklyGoals } from './hooks/useWeeklyGoals'
 import NavTabs from './components/NavTabs'
 import TodayView from './components/TodayView'
+import GoalsView from './components/GoalsView'
 import ProgressView from './components/ProgressView'
 import SettingsView from './components/SettingsView'
 import StartScreen from './components/StartScreen'
@@ -27,6 +29,7 @@ export default function App() {
 
   const [accentColor, setAccentColor] = useAccentColor()
   const [backgroundColor, setBackgroundColor] = useBackgroundColor()
+  const weeklyGoals = useWeeklyGoals(dayNumber)
   const [tab, setTab] = useState('today')
 
   if (!challenge) {
@@ -46,6 +49,16 @@ export default function App() {
           todayRecord={todayRecord}
           todayComplete={todayComplete}
           onToggle={toggleTask}
+        />
+      )}
+      {tab === 'goals' && (
+        <GoalsView
+          currentWeek={weeklyGoals.currentWeek}
+          currentGoals={weeklyGoals.currentGoals}
+          addGoal={weeklyGoals.addGoal}
+          toggleGoal={weeklyGoals.toggleGoal}
+          removeGoal={weeklyGoals.removeGoal}
+          pastWeeks={weeklyGoals.pastWeeks}
         />
       )}
       {tab === 'progress' && <ProgressView challenge={challenge} days={days} history={history} />}

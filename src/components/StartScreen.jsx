@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { DEFAULT_TASKS } from '../lib/challenge'
+import AccountSection from './AccountSection'
 
-export default function StartScreen({ onStart, justFinished, onDismissFinished }) {
+export default function StartScreen({ onStart, justFinished, onDismissFinished, account, syncStatus }) {
   const [name, setName] = useState('75 Hard')
   const [lengthDays, setLengthDays] = useState(75)
   const [tasks, setTasks] = useState(DEFAULT_TASKS)
@@ -38,6 +39,21 @@ export default function StartScreen({ onStart, justFinished, onDismissFinished }
       <p className="text-[var(--ink-300)] text-sm mb-8 max-w-md">
         Customize the rules, or keep the classic checklist. Miss a single task and it's back to Day 1.
       </p>
+
+      {account?.isSupabaseConfigured && !account.user && (
+        <div className="mb-8 pb-8 border-b border-[var(--ink-800)]">
+          <p className="text-sm text-[var(--ink-100)] mb-3">Already tracking progress on another device?</p>
+          <AccountSection
+            user={account.user}
+            loading={account.loading}
+            sendMagicLink={account.sendMagicLink}
+            logout={account.logout}
+            syncStatus={syncStatus}
+            isSupabaseConfigured={account.isSupabaseConfigured}
+          />
+          <p className="text-xs text-[var(--ink-400)] mt-4">— or start fresh below —</p>
+        </div>
+      )}
 
       <div className="space-y-6">
         <div>

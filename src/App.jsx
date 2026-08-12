@@ -1,10 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useChallenge } from './hooks/useChallenge'
 import { useAccentColor } from './hooks/useAccentColor'
 import { useBackgroundColor } from './hooks/useBackgroundColor'
 import { useGoals } from './hooks/useGoals'
-import { useAuth } from './hooks/useAuth'
-import { useCloudSync } from './hooks/useCloudSync'
 import NavTabs from './components/NavTabs'
 import TodayView from './components/TodayView'
 import GoalsView from './components/GoalsView'
@@ -34,24 +32,9 @@ export default function App() {
   const goals = useGoals()
   const [tab, setTab] = useState('today')
 
-  const auth = useAuth()
-  const { status: syncStatus, scheduleSync } = useCloudSync(auth.user)
-
-  useEffect(() => {
-    if (!auth.user) return
-    scheduleSync({ challenge, days, history, accentColor, backgroundColor, goals: goals.goals })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auth.user, challenge, days, history, accentColor, backgroundColor, goals.goals])
-
   if (!challenge) {
     return (
-      <StartScreen
-        onStart={startNewChallenge}
-        justFinished={justFinished}
-        onDismissFinished={dismissFinished}
-        account={auth}
-        syncStatus={syncStatus}
-      />
+      <StartScreen onStart={startNewChallenge} justFinished={justFinished} onDismissFinished={dismissFinished} />
     )
   }
 
@@ -86,8 +69,6 @@ export default function App() {
           onAccentChange={setAccentColor}
           backgroundColor={backgroundColor}
           onBackgroundChange={setBackgroundColor}
-          account={auth}
-          syncStatus={syncStatus}
         />
       )}
     </div>

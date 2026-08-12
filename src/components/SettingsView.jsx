@@ -2,7 +2,6 @@ import { useState } from 'react'
 import { DEFAULT_TASKS } from '../lib/challenge'
 import { ACCENT_PRESETS } from '../lib/accent'
 import { BACKGROUND_PRESETS } from '../lib/background'
-import AccountSection from './AccountSection'
 
 export default function SettingsView({
   challenge,
@@ -12,8 +11,6 @@ export default function SettingsView({
   onAccentChange,
   backgroundColor,
   onBackgroundChange,
-  account,
-  syncStatus,
 }) {
   const [name, setName] = useState(challenge.name)
   const [lengthDays, setLengthDays] = useState(challenge.lengthDays)
@@ -57,17 +54,6 @@ export default function SettingsView({
       <h2 className="font-display text-3xl text-[var(--ink-50)] mb-6">Settings</h2>
 
       <div className="space-y-6">
-        {account?.isSupabaseConfigured && (
-          <AccountSection
-            user={account.user}
-            loading={account.loading}
-            sendMagicLink={account.sendMagicLink}
-            logout={account.logout}
-            syncStatus={syncStatus}
-            isSupabaseConfigured={account.isSupabaseConfigured}
-          />
-        )}
-
         <ColorPicker
           label="Background color"
           hint="Retints the dark base (surfaces, borders, text) — everything else stays the same."

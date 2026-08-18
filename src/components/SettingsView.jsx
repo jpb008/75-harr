@@ -13,6 +13,7 @@ export default function SettingsView({
   onBackgroundChange,
   themeMode,
   onThemeModeChange,
+  notifications,
 }) {
   const [name, setName] = useState(challenge.name)
   const [lengthDays, setLengthDays] = useState(challenge.lengthDays)
@@ -82,6 +83,35 @@ export default function SettingsView({
               </button>
             ))}
           </div>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm text-[var(--ink-300)]">Notifications</label>
+            {notifications.supported && (
+              <button
+                onClick={() => (notifications.enabled ? notifications.disable() : notifications.enable())}
+                role="switch"
+                aria-checked={notifications.enabled}
+                className={`relative w-10 h-6 rounded-full transition-colors shrink-0 ${
+                  notifications.enabled ? 'bg-[var(--accent)]' : 'bg-[var(--ink-700)]'
+                }`}
+              >
+                <span
+                  className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
+                    notifications.enabled ? 'translate-x-[18px]' : 'translate-x-0.5'
+                  }`}
+                />
+              </button>
+            )}
+          </div>
+          <p className="text-xs text-[var(--ink-400)]">
+            {!notifications.supported
+              ? 'Not supported in this browser.'
+              : notifications.permission === 'denied'
+                ? 'Blocked in your browser/OS settings for this site — turn it back on there to use this.'
+                : "Get a reminder if today's tasks aren't done by evening (9pm, then more urgently after 11pm). Only fires while the app is open or running in the background — not if it's fully closed."}
+          </p>
         </div>
 
         <ColorPicker

@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
 import { atRiskLevel } from '../lib/atRisk'
+import { fireNotification } from '../lib/notify'
+import { loadJSON, saveJSON } from '../lib/storage'
+import { today } from '../lib/dates'
 
-export default function AtRiskBanner({ todayComplete, remainingCount }) {
+export default function AtRiskBanner({ todayComplete, remainingCount, notificationsEnabled }) {
   const [hour, setHour] = useState(() => new Date().getHours())
 
   useEffect(() => {
@@ -10,6 +13,27 @@ export default function AtRiskBanner({ todayComplete, remainingCount }) {
   }, [])
 
   const level = atRiskLevel(hour, todayComplete)
+
+  // Fire the real notification once per level per day — the ticking hour
+  // state re-runs this on every check, so a dedupe key in storage is what
+  // actually stops it from repeating every 5 minutes.
+  useEffect(() => {
+    if (!notificationsEnabled || !level || remainingCount === 0) return
+    const key = `notified:${today()}:${level}`
+    if (loadJSON(key, false)) return
+    saveJSON(key, true)
+    fireNotification(
+      level === 'urgent' ? '75 Hard — less than an hour left' : '75 Hard — getting late',
+      {
+        body:
+          level === 'urgent'
+            ? `${remainingCount} task${remainingCount === 1 ? '' : 's'} left. Don't lose the streak.`
+            : `${remainingCount} task${remainingCount === 1 ? '' : 's'} left today.`,
+        tag: 'at-risk',
+      }
+    )
+  }, [level, remainingCount, notificationsEnabled])
+
   if (!level || remainingCount === 0) return null
 
   const styles =

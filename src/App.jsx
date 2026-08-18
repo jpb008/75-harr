@@ -5,6 +5,7 @@ import { useBackgroundColor } from './hooks/useBackgroundColor'
 import { useGoals } from './hooks/useGoals'
 import { usePhotos } from './hooks/usePhotos'
 import { useMilestoneCelebration } from './hooks/useMilestoneCelebration'
+import { useNotifications } from './hooks/useNotifications'
 import { today } from './lib/dates'
 import NavTabs from './components/NavTabs'
 import TodayView from './components/TodayView'
@@ -35,6 +36,7 @@ export default function App() {
   const goals = useGoals()
   const photos = usePhotos()
   const milestone = useMilestoneCelebration(challenge, dayNumber, todayComplete)
+  const notifications = useNotifications()
   const [tab, setTab] = useState('today')
 
   const todayDateStr = today()
@@ -60,6 +62,7 @@ export default function App() {
           photoUrl={photos.urls[todayDateStr]}
           onSetPhoto={photos.setPhotoForDate}
           milestone={milestone}
+          notificationsEnabled={notifications.enabled}
         />
       )}
       {tab === 'goals' && (
@@ -84,6 +87,7 @@ export default function App() {
           onBackgroundChange={setBackgroundColor}
           themeMode={themeMode}
           onThemeModeChange={setThemeMode}
+          notifications={notifications}
         />
       )}
     </div>

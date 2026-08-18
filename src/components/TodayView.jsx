@@ -15,6 +15,7 @@ export default function TodayView({
   photoUrl,
   onSetPhoto,
   milestone,
+  notificationsEnabled,
 }) {
   const [shareOpen, setShareOpen] = useState(false)
   const percent = challenge.tasks.length
@@ -59,7 +60,11 @@ export default function TodayView({
         />
       </div>
 
-      <AtRiskBanner todayComplete={todayComplete} remainingCount={remainingCount} />
+      <AtRiskBanner
+        todayComplete={todayComplete}
+        remainingCount={remainingCount}
+        notificationsEnabled={notificationsEnabled}
+      />
 
       <ul className="space-y-2.5">
         {challenge.tasks.map((task) => {

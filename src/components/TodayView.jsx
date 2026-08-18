@@ -1,12 +1,39 @@
-export default function TodayView({ challenge, dayNumber, streak, todayRecord, todayComplete, onToggle }) {
+import { useState } from 'react'
+import AtRiskBanner from './AtRiskBanner'
+import ProgressPhotoCard from './ProgressPhotoCard'
+import MilestoneOverlay from './MilestoneOverlay'
+import ShareCardModal from './ShareCardModal'
+
+export default function TodayView({
+  challenge,
+  dayNumber,
+  streak,
+  todayRecord,
+  todayComplete,
+  onToggle,
+  todayDateStr,
+  photoUrl,
+  onSetPhoto,
+  milestone,
+}) {
+  const [shareOpen, setShareOpen] = useState(false)
   const percent = challenge.tasks.length
     ? Math.round((todayRecord.completedTaskIds.length / challenge.tasks.length) * 100)
     : 0
+  const remainingCount = challenge.tasks.length - todayRecord.completedTaskIds.length
 
   return (
     <div className="max-w-xl mx-auto px-4 py-8">
       <div className="mb-8">
-        <p className="text-[var(--ink-300)] text-xs uppercase tracking-[0.15em]">{challenge.name}</p>
+        <div className="flex items-start justify-between gap-3">
+          <p className="text-[var(--ink-300)] text-xs uppercase tracking-[0.15em]">{challenge.name}</p>
+          <button
+            onClick={() => setShareOpen(true)}
+            className="text-xs text-[var(--ink-300)] hover:text-[var(--ink-50)] border border-[var(--ink-700)] rounded-full px-2.5 py-1 transition-colors shrink-0"
+          >
+            Share
+          </button>
+        </div>
         <div className="flex items-baseline gap-3 mt-1">
           <h1 className="font-display text-6xl leading-none text-[var(--ink-50)]">
             Day {dayNumber}
@@ -18,7 +45,7 @@ export default function TodayView({ challenge, dayNumber, streak, todayRecord, t
             🔥 {streak} day streak
           </span>
           {todayComplete && (
-            <span className="inline-flex items-center gap-1 text-sm text-emerald-400 font-medium">
+            <span className="inline-flex items-center gap-1 text-sm text-[var(--success)] font-medium">
               ✓ Today complete
             </span>
           )}
@@ -32,6 +59,8 @@ export default function TodayView({ challenge, dayNumber, streak, todayRecord, t
         />
       </div>
 
+      <AtRiskBanner todayComplete={todayComplete} remainingCount={remainingCount} />
+
       <ul className="space-y-2.5">
         {challenge.tasks.map((task) => {
           const checked = todayRecord.completedTaskIds.includes(task.id)
@@ -43,6 +72,7 @@ export default function TodayView({ challenge, dayNumber, streak, todayRecord, t
                     ? 'bg-[var(--accent-a10)] border-[var(--accent-a40)]'
                     : 'bg-[var(--ink-900)] border-[var(--ink-800)] hover:border-[var(--ink-700)]'
                 }`}
+                style={task.color ? { borderLeftColor: task.color, borderLeftWidth: '3px' } : undefined}
               >
                 <input
                   type="checkbox"
@@ -50,6 +80,7 @@ export default function TodayView({ challenge, dayNumber, streak, todayRecord, t
                   onChange={() => onToggle(task.id)}
                   className="task-check"
                 />
+                {task.icon && <span className="text-base shrink-0">{task.icon}</span>}
                 <span className={checked ? 'text-[var(--ink-200)] line-through decoration-[var(--ink-400)]' : 'text-[var(--ink-50)]'}>
                   {task.label}
                 </span>
@@ -65,9 +96,27 @@ export default function TodayView({ challenge, dayNumber, streak, todayRecord, t
         </p>
       )}
 
-      <p className="text-[var(--ink-400)] text-xs mt-8 text-center">
+      <div className="mt-6">
+        <ProgressPhotoCard dateStr={todayDateStr} photoUrl={photoUrl} onSetPhoto={onSetPhoto} />
+      </div>
+
+      <p className="text-[var(--ink-400)] text-xs mt-2 text-center">
         Miss any task by midnight and the challenge resets to Day 1 automatically.
       </p>
+
+      {shareOpen && (
+        <ShareCardModal
+          challenge={challenge}
+          dayNumber={dayNumber}
+          streak={streak}
+          isFinished={false}
+          onClose={() => setShareOpen(false)}
+        />
+      )}
+
+      {milestone.visible && (
+        <MilestoneOverlay label={milestone.label} isFinish={milestone.isFinish} onDismiss={milestone.dismiss} />
+      )}
     </div>
   )
 }

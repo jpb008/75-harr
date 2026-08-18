@@ -45,7 +45,7 @@ export default function GoalsView({ goals, addGoal, toggleGoal, removeGoal }) {
                   e.preventDefault()
                   removeGoal(goal.id)
                 }}
-                className="text-[var(--ink-400)] hover:text-rose-400 px-1 transition-colors"
+                className="text-[var(--ink-400)] hover:text-[var(--danger)] px-1 transition-colors"
                 aria-label="Remove goal"
               >
                 ✕

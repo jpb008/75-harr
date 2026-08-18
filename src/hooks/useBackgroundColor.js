@@ -4,11 +4,13 @@ import { applyBackground, DEFAULT_BACKGROUND } from '../lib/background'
 
 export function useBackgroundColor() {
   const [backgroundColor, setBackgroundColor] = useState(() => loadJSON('backgroundColor', DEFAULT_BACKGROUND))
+  const [themeMode, setThemeMode] = useState(() => loadJSON('themeMode', 'dark'))
 
   useEffect(() => {
-    applyBackground(backgroundColor)
+    applyBackground(backgroundColor, themeMode)
     saveJSON('backgroundColor', backgroundColor)
-  }, [backgroundColor])
+    saveJSON('themeMode', themeMode)
+  }, [backgroundColor, themeMode])
 
-  return [backgroundColor, setBackgroundColor]
+  return { backgroundColor, setBackgroundColor, themeMode, setThemeMode }
 }

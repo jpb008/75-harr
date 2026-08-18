@@ -1,13 +1,19 @@
 import { addDays, daysBetween, today } from './dates'
 
 export const DEFAULT_TASKS = [
-  { id: 't1', label: 'Follow a diet — no cheat meals, no alcohol' },
-  { id: 't2', label: 'Workout 1 (45 min)' },
-  { id: 't3', label: 'Workout 2 — outdoors (45 min)' },
-  { id: 't4', label: 'Drink 1 gallon of water' },
-  { id: 't5', label: 'Read 10 pages (non-fiction / self-development)' },
-  { id: 't6', label: 'Take a progress photo' },
+  { id: 't1', label: 'Follow a diet — no cheat meals, no alcohol', icon: '🥗' },
+  { id: 't2', label: 'Workout 1 (45 min)', icon: '💪' },
+  { id: 't3', label: 'Workout 2 — outdoors (45 min)', icon: '🏃' },
+  { id: 't4', label: 'Drink 1 gallon of water', icon: '💧' },
+  { id: 't5', label: 'Read 10 pages (non-fiction / self-development)', icon: '📖' },
+  { id: 't6', label: 'Take a progress photo', icon: '📸' },
 ]
+
+// Curated so the picker stays small and every option reads clearly at
+// checklist size — not an exhaustive emoji set.
+export const TASK_ICONS = ['💪', '🏃', '🥗', '💧', '📖', '📸', '🧘', '🚫', '☀️', '❄️', '🔥', '⏰', '📵', '🛌', '✅', '🎯']
+
+export const TASK_COLORS = ['#8b5cf6', '#3b82f6', '#14b8c4', '#22c55e', '#eab308', '#f97316', '#ec4899', '#94a3b8']
 
 export function newChallenge({ name = '75 Hard', lengthDays = 75, tasks = DEFAULT_TASKS, startDate = today() } = {}) {
   return {

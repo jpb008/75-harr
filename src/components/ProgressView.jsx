@@ -1,7 +1,11 @@
 import { addDays, formatPretty, today } from '../lib/dates'
 import { isDayComplete } from '../lib/challenge'
+import { computeStats, computeHeatmapCells } from '../lib/stats'
+import StatsSection from './StatsSection'
+import HeatmapView from './HeatmapView'
+import PhotoTimeline from './PhotoTimeline'
 
-export default function ProgressView({ challenge, days, history }) {
+export default function ProgressView({ challenge, days, history, photoUrls }) {
   const todayStr = today()
   const cells = Array.from({ length: challenge.lengthDays }, (_, i) => {
     const dateStr = addDays(challenge.startDate, i)
@@ -13,11 +17,14 @@ export default function ProgressView({ challenge, days, history }) {
   })
 
   const styles = {
-    done: 'bg-emerald-500/80 text-emerald-950',
-    missed: 'bg-rose-500/15 text-rose-300 border border-rose-500/40',
+    done: 'bg-[var(--success-strong)] text-[var(--success-on-strong)]',
+    missed: 'bg-[var(--danger-soft)] text-[var(--danger)] border border-[var(--danger-border)]',
     today: 'bg-[var(--accent-a15)] text-[var(--accent-light)] border border-[var(--accent-a60)] shadow-[0_0_0_3px_var(--accent-a15)]',
     upcoming: 'bg-[var(--ink-900)] text-[var(--ink-400)] border border-[var(--ink-800)]',
   }
+
+  const stats = computeStats(challenge, days, history)
+  const heatmapCells = computeHeatmapCells(challenge, days)
 
   return (
     <div className="max-w-xl mx-auto px-4 py-8">
@@ -39,11 +46,15 @@ export default function ProgressView({ challenge, days, history }) {
       </div>
 
       <div className="flex gap-4 text-xs text-[var(--ink-300)] mb-10 flex-wrap">
-        <Legend swatch="bg-emerald-500/80" label="Complete" />
-        <Legend swatch="bg-rose-500/15 border border-rose-500/40" label="Missed" />
+        <Legend swatch="bg-[var(--success-strong)]" label="Complete" />
+        <Legend swatch="bg-[var(--danger-soft)] border border-[var(--danger-border)]" label="Missed" />
         <Legend swatch="bg-[var(--accent-a15)] border border-[var(--accent-a60)]" label="Today" />
         <Legend swatch="bg-[var(--ink-900)] border border-[var(--ink-800)]" label="Upcoming" />
       </div>
+
+      <StatsSection stats={stats} />
+      <HeatmapView cells={heatmapCells} />
+      <PhotoTimeline urls={photoUrls} />
 
       <h3 className="font-display text-xl text-[var(--ink-50)] mb-3 tracking-wide">Past attempts</h3>
       {history.length === 0 && <p className="text-[var(--ink-400)] text-sm">No past attempts yet — this is your first run.</p>}
@@ -60,7 +71,7 @@ export default function ProgressView({ challenge, days, history }) {
               </p>
             </div>
             <div className="text-right">
-              <p className={h.reason === 'finished' ? 'text-emerald-400 font-medium' : 'text-rose-400 font-medium'}>
+              <p className={h.reason === 'finished' ? 'text-[var(--success)] font-medium' : 'text-[var(--danger)] font-medium'}>
                 {h.reason === 'finished' ? 'Finished 🎉' : 'Reset'}
               </p>
               <p className="text-[var(--ink-400)] text-xs tabular-nums">

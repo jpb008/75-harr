@@ -3,6 +3,9 @@ import { useChallenge } from './hooks/useChallenge'
 import { useAccentColor } from './hooks/useAccentColor'
 import { useBackgroundColor } from './hooks/useBackgroundColor'
 import { useGoals } from './hooks/useGoals'
+import { usePhotos } from './hooks/usePhotos'
+import { useMilestoneCelebration } from './hooks/useMilestoneCelebration'
+import { today } from './lib/dates'
 import NavTabs from './components/NavTabs'
 import TodayView from './components/TodayView'
 import GoalsView from './components/GoalsView'
@@ -28,9 +31,13 @@ export default function App() {
   } = useChallenge()
 
   const [accentColor, setAccentColor] = useAccentColor()
-  const [backgroundColor, setBackgroundColor] = useBackgroundColor()
+  const { backgroundColor, setBackgroundColor, themeMode, setThemeMode } = useBackgroundColor()
   const goals = useGoals()
+  const photos = usePhotos()
+  const milestone = useMilestoneCelebration(challenge, dayNumber, todayComplete)
   const [tab, setTab] = useState('today')
+
+  const todayDateStr = today()
 
   if (!challenge) {
     return (
@@ -49,6 +56,10 @@ export default function App() {
           todayRecord={todayRecord}
           todayComplete={todayComplete}
           onToggle={toggleTask}
+          todayDateStr={todayDateStr}
+          photoUrl={photos.urls[todayDateStr]}
+          onSetPhoto={photos.setPhotoForDate}
+          milestone={milestone}
         />
       )}
       {tab === 'goals' && (
@@ -59,7 +70,9 @@ export default function App() {
           removeGoal={goals.removeGoal}
         />
       )}
-      {tab === 'progress' && <ProgressView challenge={challenge} days={days} history={history} />}
+      {tab === 'progress' && (
+        <ProgressView challenge={challenge} days={days} history={history} photoUrls={photos.urls} />
+      )}
       {tab === 'settings' && (
         <SettingsView
           challenge={challenge}
@@ -69,6 +82,8 @@ export default function App() {
           onAccentChange={setAccentColor}
           backgroundColor={backgroundColor}
           onBackgroundChange={setBackgroundColor}
+          themeMode={themeMode}
+          onThemeModeChange={setThemeMode}
         />
       )}
     </div>

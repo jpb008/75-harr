@@ -45,6 +45,17 @@ html {
   --ink-200: hsl(262, 40%, 73%);
   --ink-100: hsl(262, 58%, 91%);
   --ink-50: hsl(262, 100%, 97%);
+
+  /* Semantic tokens (complete/missed) — separate from the accent hue,
+     overridden at runtime per dark/light mode alongside the ink ramp. */
+  --success: #34d399;
+  --success-soft: rgba(16, 185, 129, 0.1);
+  --success-border: rgba(16, 185, 129, 0.4);
+  --success-strong: rgba(16, 185, 129, 0.8);
+  --success-on-strong: #022c22;
+  --danger: #fb7185;
+  --danger-soft: rgba(244, 63, 94, 0.1);
+  --danger-border: rgba(244, 63, 94, 0.4);
 }
 
 body {

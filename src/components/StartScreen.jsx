@@ -24,10 +24,10 @@ export default function StartScreen({ onStart, justFinished, onDismissFinished }
   return (
     <div className="max-w-xl mx-auto px-4 py-10">
       {justFinished && (
-        <div className="mb-8 rounded-xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-center">
-          <p className="text-emerald-300 font-semibold text-lg">🎉 Challenge complete!</p>
-          <p className="text-emerald-400/80 text-sm mt-1">You made it every single day. Start a new one below.</p>
-          <button onClick={onDismissFinished} className="text-xs text-emerald-500 hover:text-emerald-400 mt-2">
+        <div className="mb-8 rounded-xl border border-[var(--success-border)] bg-[var(--success-soft)] p-4 text-center">
+          <p className="text-[var(--success)] font-semibold text-lg">🎉 Challenge complete!</p>
+          <p className="text-[var(--success)] text-sm mt-1 opacity-80">You made it every single day. Start a new one below.</p>
+          <button onClick={onDismissFinished} className="text-xs text-[var(--success)] hover:opacity-80 mt-2">
             Dismiss
           </button>
         </div>
@@ -61,12 +61,13 @@ export default function StartScreen({ onStart, justFinished, onDismissFinished }
           <ul className="space-y-2">
             {tasks.map((task) => (
               <li key={task.id} className="flex items-center gap-2">
-                <span className="flex-1 rounded-lg bg-[var(--ink-900)] border border-[var(--ink-700)] px-3 py-2 text-sm text-[var(--ink-50)]">
+                <span className="flex-1 flex items-center gap-2 rounded-lg bg-[var(--ink-900)] border border-[var(--ink-700)] px-3 py-2 text-sm text-[var(--ink-50)]">
+                  {task.icon && <span>{task.icon}</span>}
                   {task.label}
                 </span>
                 <button
                   onClick={() => removeTask(task.id)}
-                  className="text-[var(--ink-400)] hover:text-rose-400 px-2 transition-colors"
+                  className="text-[var(--ink-400)] hover:text-[var(--danger)] px-2 transition-colors"
                   aria-label="Remove task"
                 >
                   ✕

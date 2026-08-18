@@ -93,13 +93,13 @@ export default function SettingsView({
                 onClick={() => (notifications.enabled ? notifications.disable() : notifications.enable())}
                 role="switch"
                 aria-checked={notifications.enabled}
-                className={`relative w-10 h-6 rounded-full transition-colors shrink-0 ${
+                className={`relative w-10 h-6 rounded-full transition-colors duration-200 ease-in-out shrink-0 ${
                   notifications.enabled ? 'bg-[var(--accent)]' : 'bg-[var(--ink-700)]'
                 }`}
               >
                 <span
-                  className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${
-                    notifications.enabled ? 'translate-x-[18px]' : 'translate-x-0.5'
+                  className={`absolute left-0.5 top-0.5 w-5 h-5 rounded-full bg-white transition-transform duration-200 ease-in-out ${
+                    notifications.enabled ? 'translate-x-4' : 'translate-x-0'
                   }`}
                 />
               </button>

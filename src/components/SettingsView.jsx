@@ -110,7 +110,11 @@ export default function SettingsView({
               ? 'Not supported in this browser.'
               : notifications.permission === 'denied'
                 ? 'Blocked in your browser/OS settings for this site — turn it back on there to use this.'
-                : "Get a reminder if today's tasks aren't done by evening (9pm, then more urgently after 11pm). Only fires while the app is open or running in the background — not if it's fully closed."}
+                : notifications.enabled && notifications.pushConfigured && !notifications.pushEnabled
+                  ? "Get a reminder if today's tasks aren't done by evening (9pm, then more urgently after 11pm). Couldn't set up delivery for when the app is closed — reminders will still work while it's open."
+                  : notifications.pushEnabled
+                    ? "Get a reminder if today's tasks aren't done by evening (9pm, then more urgently after 11pm) — works even if the app is fully closed."
+                    : "Get a reminder if today's tasks aren't done by evening (9pm, then more urgently after 11pm). Only fires while the app is open or running in the background — not if it's fully closed."}
           </p>
         </div>
 

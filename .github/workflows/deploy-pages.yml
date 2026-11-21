@@ -26,6 +26,7 @@ jobs:
       - run: npm ci
       - run: npm run build
         env:
+          VITE_API_URL: ${{ secrets.VITE_API_URL }}
           VITE_VAPID_PUBLIC_KEY: ${{ secrets.VITE_VAPID_PUBLIC_KEY }}
           VITE_PUSH_API_URL: ${{ secrets.VITE_PUSH_API_URL }}
       - uses: actions/configure-pages@v5

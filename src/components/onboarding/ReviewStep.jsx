@@ -6,8 +6,8 @@ const TIERS = [
   { id: 'advanced', label: 'Advanced / High Intensity' },
 ]
 
-export default function ReviewStep({ answers, onSubmit, onBack, submitting }) {
-  const [intensityTier, setIntensityTier] = useState('beginner')
+export default function ReviewStep({ answers, initialTier, onSubmit, onBack, submitting }) {
+  const [intensityTier, setIntensityTier] = useState(initialTier ?? 'beginner')
 
   return (
     <div className="space-y-6">

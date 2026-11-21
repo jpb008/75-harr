@@ -23,6 +23,7 @@ import StartScreen from './components/StartScreen'
 import AuthScreen from './components/AuthScreen'
 import OnboardingFlow from './components/onboarding/OnboardingFlow'
 import WeeklyReviewModal from './components/WeeklyReviewModal'
+import PlanSettingsView from './components/PlanSettingsView'
 
 export default function App() {
   const auth = useAuth()
@@ -40,10 +41,10 @@ export default function App() {
     return <AuthScreen onSignup={handleSignup} onLogin={auth.login} error={auth.error} />
   }
 
-  return <AuthenticatedApp token={auth.token} />
+  return <AuthenticatedApp token={auth.token} email={auth.email} onLogout={auth.logout} />
 }
 
-function AuthenticatedApp({ token }) {
+function AuthenticatedApp({ token, email, onLogout }) {
   const {
     challenge,
     days,
@@ -138,6 +139,7 @@ function AuthenticatedApp({ token }) {
       {tab === 'progress' && (
         <ProgressView challenge={challenge} days={days} history={history} photoUrls={photos.urls} />
       )}
+      {tab === 'plan' && <PlanSettingsView plan={plan} onDone={() => setTab('today')} />}
       {tab === 'settings' && (
         <SettingsView
           challenge={challenge}
@@ -150,6 +152,8 @@ function AuthenticatedApp({ token }) {
           themeMode={themeMode}
           onThemeModeChange={setThemeMode}
           notifications={notifications}
+          email={email}
+          onLogout={onLogout}
         />
       )}
       {reviewOpen && (

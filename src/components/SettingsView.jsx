@@ -3,6 +3,23 @@ import { DEFAULT_TASKS, TASK_ICONS, TASK_COLORS } from '../lib/challenge'
 import { ACCENT_PRESETS } from '../lib/accent'
 import { BACKGROUND_PRESETS } from '../lib/background'
 
+const EXPORT_KEYS = ['challenge', 'days', 'history', 'goals', 'celebratedMilestones', 'planDays', 'plan', 'planAnswers']
+
+function exportData() {
+  const data = {}
+  for (const key of EXPORT_KEYS) {
+    const raw = localStorage.getItem(`75hard:${key}`)
+    if (raw !== null) data[key] = JSON.parse(raw)
+  }
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `75hard-export-${new Date().toISOString().slice(0, 10)}.json`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
 export default function SettingsView({
   challenge,
   onSave,
@@ -14,6 +31,8 @@ export default function SettingsView({
   themeMode,
   onThemeModeChange,
   notifications,
+  email,
+  onLogout,
 }) {
   const [name, setName] = useState(challenge.name)
   const [lengthDays, setLengthDays] = useState(challenge.lengthDays)
@@ -216,6 +235,24 @@ export default function SettingsView({
         >
           Save changes
         </button>
+
+        <div className="pt-6 border-t border-[var(--ink-800)] space-y-3">
+          <p className="text-sm text-[var(--ink-300)]">Account{email ? `: ${email}` : ''}</p>
+          <div className="flex gap-2">
+            <button
+              onClick={exportData}
+              className="flex-1 rounded-lg border border-[var(--ink-700)] text-[var(--ink-200)] hover:text-[var(--ink-50)] text-sm py-2 transition-colors"
+            >
+              Export my data
+            </button>
+            <button
+              onClick={onLogout}
+              className="flex-1 rounded-lg border border-[var(--ink-700)] text-[var(--ink-200)] hover:text-[var(--ink-50)] text-sm py-2 transition-colors"
+            >
+              Log out
+            </button>
+          </div>
+        </div>
 
         <div className="pt-6 border-t border-[var(--ink-800)]">
           {!confirmRestart ? (

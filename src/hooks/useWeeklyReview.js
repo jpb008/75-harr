@@ -15,7 +15,10 @@ function weekStartDateStr(dateStr) {
 export function useWeeklyReview(token, plan, answers, savePlan) {
   const previousWeekStart = addDays(weekStartDateStr(today()), -7)
   const lastReviewedWeek = loadJSON('lastReviewedWeekStart', null)
-  const isDue = Boolean(plan) && lastReviewedWeek !== previousWeekStart
+  // A plan generated THIS week (e.g. a brand-new user who just finished
+  // onboarding) has no completed week behind it yet — nothing to review.
+  const planPredatesReviewWeek = Boolean(plan?.generatedAt) && plan.generatedAt.slice(0, 10) <= previousWeekStart
+  const isDue = Boolean(plan) && lastReviewedWeek !== previousWeekStart && planPredatesReviewWeek
 
   const [snapshot, setSnapshot] = useState(null)
   const [proposals, setProposals] = useState([])

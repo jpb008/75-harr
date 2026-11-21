@@ -7,9 +7,11 @@ import ReviewStep from './ReviewStep'
 
 const STEPS = ['personal', 'fitness', 'mental', 'financial', 'review']
 
-export default function OnboardingFlow({ onComplete }) {
+export default function OnboardingFlow({ onComplete, initialAnswers, title = "Let's build your plan" }) {
   const [stepIndex, setStepIndex] = useState(0)
-  const [answers, setAnswers] = useState({ personal: {}, fitnessGoals: {}, mentalGoals: {}, financialGoals: {} })
+  const [answers, setAnswers] = useState(
+    initialAnswers ?? { personal: {}, fitnessGoals: {}, mentalGoals: {}, financialGoals: {} }
+  )
   const [submitting, setSubmitting] = useState(false)
 
   const step = STEPS[stepIndex]
@@ -43,7 +45,7 @@ export default function OnboardingFlow({ onComplete }) {
       <p className="font-display text-lg text-[var(--accent-light)] tracking-wide">
         75<span className="text-[var(--ink-100)]">HARD</span>
       </p>
-      <h1 className="font-display text-5xl leading-none text-[var(--ink-50)] mt-1 mb-2">Let's build your plan</h1>
+      <h1 className="font-display text-5xl leading-none text-[var(--ink-50)] mt-1 mb-2">{title}</h1>
       <p className="text-[var(--ink-300)] text-sm mb-6">
         Step {stepIndex + 1} of {STEPS.length}
       </p>
@@ -63,7 +65,15 @@ export default function OnboardingFlow({ onComplete }) {
       {step === 'financial' && (
         <FinancialGoalsStep initial={answers.financialGoals} onNext={(d) => next('financialGoals', d)} onBack={back} />
       )}
-      {step === 'review' && <ReviewStep answers={answers} onSubmit={submit} onBack={back} submitting={submitting} />}
+      {step === 'review' && (
+        <ReviewStep
+          answers={answers}
+          initialTier={initialAnswers?.meta?.intensityTier}
+          onSubmit={submit}
+          onBack={back}
+          submitting={submitting}
+        />
+      )}
     </div>
   )
 }

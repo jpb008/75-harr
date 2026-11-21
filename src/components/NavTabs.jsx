@@ -2,6 +2,7 @@ const TABS = [
   { id: 'today', label: 'Today' },
   { id: 'goals', label: 'Goals' },
   { id: 'progress', label: 'Progress' },
+  { id: 'plan', label: 'Plan' },
   { id: 'settings', label: 'Settings' },
 ]
 

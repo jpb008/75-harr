@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useSync } from './hooks/useSync'
 import { usePlan } from './hooks/usePlan'
+import { usePlanDay } from './hooks/usePlanDay'
 import { runMigrationIfNeeded } from './lib/migrate'
 import { useChallenge } from './hooks/useChallenge'
 import { useAccentColor } from './hooks/useAccentColor'
@@ -64,6 +65,7 @@ function AuthenticatedApp({ token }) {
   const milestone = useMilestoneCelebration(challenge, dayNumber, todayComplete)
   const notifications = useNotifications()
   const plan = usePlan(token)
+  const planDayApi = usePlanDay(plan.plan)
   const [tab, setTab] = useState('today')
 
   const todayDateStr = today()
@@ -109,6 +111,8 @@ function AuthenticatedApp({ token }) {
           onSetPhoto={photos.setPhotoForDate}
           milestone={milestone}
           notificationsEnabled={notifications.enabled}
+          plan={plan.plan}
+          planDayApi={planDayApi}
         />
       )}
       {tab === 'goals' && (

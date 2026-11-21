@@ -3,6 +3,7 @@ import AtRiskBanner from './AtRiskBanner'
 import ProgressPhotoCard from './ProgressPhotoCard'
 import MilestoneOverlay from './MilestoneOverlay'
 import ShareCardModal from './ShareCardModal'
+import TodayPlanSection from './TodayPlanSection'
 
 export default function TodayView({
   challenge,
@@ -16,6 +17,8 @@ export default function TodayView({
   onSetPhoto,
   milestone,
   notificationsEnabled,
+  plan,
+  planDayApi,
 }) {
   const [shareOpen, setShareOpen] = useState(false)
   const percent = challenge.tasks.length
@@ -108,6 +111,8 @@ export default function TodayView({
       <p className="text-[var(--ink-400)] text-xs mt-2 text-center">
         Miss any task by midnight and the challenge resets to Day 1 automatically.
       </p>
+
+      {plan && <TodayPlanSection plan={plan} planDayApi={planDayApi} />}
 
       {shareOpen && (
         <ShareCardModal

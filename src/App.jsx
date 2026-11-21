@@ -1,8 +1,9 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useSync } from './hooks/useSync'
 import { usePlan } from './hooks/usePlan'
 import { usePlanDay } from './hooks/usePlanDay'
+import { useWeeklyReview } from './hooks/useWeeklyReview'
 import { runMigrationIfNeeded } from './lib/migrate'
 import { useChallenge } from './hooks/useChallenge'
 import { useAccentColor } from './hooks/useAccentColor'
@@ -21,6 +22,7 @@ import SettingsView from './components/SettingsView'
 import StartScreen from './components/StartScreen'
 import AuthScreen from './components/AuthScreen'
 import OnboardingFlow from './components/onboarding/OnboardingFlow'
+import WeeklyReviewModal from './components/WeeklyReviewModal'
 
 export default function App() {
   const auth = useAuth()
@@ -66,9 +68,19 @@ function AuthenticatedApp({ token }) {
   const notifications = useNotifications()
   const plan = usePlan(token)
   const planDayApi = usePlanDay(plan.plan)
+  const weeklyReview = useWeeklyReview(token, plan.plan, plan.answers, plan.savePlan)
   const [tab, setTab] = useState('today')
+  const [reviewOpen, setReviewOpen] = useState(false)
 
   const todayDateStr = today()
+
+  useEffect(() => {
+    if (weeklyReview.isDue) {
+      weeklyReview.prepareReview()
+      setReviewOpen(true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weeklyReview.isDue])
 
   // While the plan fetch is in flight, render nothing rather than falling
   // through to StartScreen — a brand-new user would otherwise see a flash
@@ -138,6 +150,13 @@ function AuthenticatedApp({ token }) {
           themeMode={themeMode}
           onThemeModeChange={setThemeMode}
           notifications={notifications}
+        />
+      )}
+      {reviewOpen && (
+        <WeeklyReviewModal
+          proposals={weeklyReview.proposals}
+          onSubmit={weeklyReview.submitReview}
+          onClose={() => setReviewOpen(false)}
         />
       )}
     </div>

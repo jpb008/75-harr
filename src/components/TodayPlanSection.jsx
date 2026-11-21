@@ -85,12 +85,14 @@ export default function TodayPlanSection({ plan, planDayApi }) {
             </ul>
           ) : (
             <div className="text-sm text-[var(--ink-200)] space-y-1">
-              <p>
-                Protein target:{' '}
-                {plan.nutrition.proteinTarget.gramsPerDay
-                  ? `${plan.nutrition.proteinTarget.gramsPerDay[0]}-${plan.nutrition.proteinTarget.gramsPerDay[1]}g/day`
-                  : `${plan.nutrition.proteinTarget.gramsPerKgRange[0]}-${plan.nutrition.proteinTarget.gramsPerKgRange[1]}g/kg bodyweight`}
-              </p>
+              {plan.nutrition.proteinTarget && (
+                <p>
+                  Protein target:{' '}
+                  {plan.nutrition.proteinTarget.gramsPerDay
+                    ? `${plan.nutrition.proteinTarget.gramsPerDay[0]}-${plan.nutrition.proteinTarget.gramsPerDay[1]}g/day`
+                    : `${plan.nutrition.proteinTarget.gramsPerKgRange[0]}-${plan.nutrition.proteinTarget.gramsPerKgRange[1]}g/kg bodyweight`}
+                </p>
+              )}
               {plan.nutrition.rateOfChangeGuidance && <p>{plan.nutrition.rateOfChangeGuidance}</p>}
             </div>
           )}

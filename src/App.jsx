@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useSync } from './hooks/useSync'
+import { usePlan } from './hooks/usePlan'
 import { runMigrationIfNeeded } from './lib/migrate'
 import { useChallenge } from './hooks/useChallenge'
 import { useAccentColor } from './hooks/useAccentColor'
@@ -10,6 +11,7 @@ import { usePhotos } from './hooks/usePhotos'
 import { useMilestoneCelebration } from './hooks/useMilestoneCelebration'
 import { useNotifications } from './hooks/useNotifications'
 import { today } from './lib/dates'
+import { DEFAULT_TASKS } from './lib/challenge'
 import NavTabs from './components/NavTabs'
 import TodayView from './components/TodayView'
 import GoalsView from './components/GoalsView'
@@ -17,6 +19,7 @@ import ProgressView from './components/ProgressView'
 import SettingsView from './components/SettingsView'
 import StartScreen from './components/StartScreen'
 import AuthScreen from './components/AuthScreen'
+import OnboardingFlow from './components/onboarding/OnboardingFlow'
 
 export default function App() {
   const auth = useAuth()
@@ -34,10 +37,10 @@ export default function App() {
     return <AuthScreen onSignup={handleSignup} onLogin={auth.login} error={auth.error} />
   }
 
-  return <AuthenticatedApp />
+  return <AuthenticatedApp token={auth.token} />
 }
 
-function AuthenticatedApp() {
+function AuthenticatedApp({ token }) {
   const {
     challenge,
     days,
@@ -60,9 +63,29 @@ function AuthenticatedApp() {
   const photos = usePhotos()
   const milestone = useMilestoneCelebration(challenge, dayNumber, todayComplete)
   const notifications = useNotifications()
+  const plan = usePlan(token)
   const [tab, setTab] = useState('today')
 
   const todayDateStr = today()
+
+  // While the plan fetch is in flight, render nothing rather than falling
+  // through to StartScreen — a brand-new user would otherwise see a flash
+  // of StartScreen before OnboardingFlow mounts a moment later.
+  if (plan.loading) return null
+
+  if (!challenge && !plan.hasPlan) {
+    return (
+      <OnboardingFlow
+        onComplete={async (answers) => {
+          // Start the classic checklist first (synchronous, no network) so
+          // there's no flash of StartScreen while savePlan's await is
+          // in flight — the two systems stay decoupled either way.
+          startNewChallenge({ name: '75 Hard', lengthDays: 75, tasks: DEFAULT_TASKS })
+          await plan.savePlan(answers, { source: 'onboarding' })
+        }}
+      />
+    )
+  }
 
   if (!challenge) {
     return (

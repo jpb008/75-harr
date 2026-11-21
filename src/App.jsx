@@ -88,14 +88,19 @@ function AuthenticatedApp({ token, email, onLogout }) {
   // of StartScreen before OnboardingFlow mounts a moment later.
   if (plan.loading) return null
 
-  if (!challenge && !plan.hasPlan) {
+  // Show onboarding to anyone without a plan yet — including someone who
+  // already has a classic challenge running from before this feature
+  // existed (e.g. migrated from an older version of the app). Having a
+  // challenge already isn't a reason to skip getting a personalized plan.
+  if (!plan.hasPlan) {
     return (
       <OnboardingFlow
         onComplete={async (answers) => {
-          // Start the classic checklist first (synchronous, no network) so
-          // there's no flash of StartScreen while savePlan's await is
-          // in flight — the two systems stay decoupled either way.
-          startNewChallenge({ name: '75 Hard', lengthDays: 75, tasks: DEFAULT_TASKS })
+          // Only start a fresh classic challenge if one doesn't already
+          // exist — never overwrite an in-progress streak.
+          if (!challenge) {
+            startNewChallenge({ name: '75 Hard', lengthDays: 75, tasks: DEFAULT_TASKS })
+          }
           await plan.savePlan(answers, { source: 'onboarding' })
         }}
       />

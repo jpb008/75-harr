@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useSync } from './hooks/useSync'
+import { runMigrationIfNeeded } from './lib/migrate'
 import { useChallenge } from './hooks/useChallenge'
 import { useAccentColor } from './hooks/useAccentColor'
 import { useBackgroundColor } from './hooks/useBackgroundColor'
@@ -21,8 +22,16 @@ export default function App() {
   const auth = useAuth()
   useSync(auth.token)
 
+  async function handleSignup(email, password) {
+    const session = await auth.signup(email, password)
+    // Only on signup, never login — a brand-new account's server state is
+    // guaranteed empty, so this device's existing local data (if any) is
+    // safe to upload as the very first write.
+    await runMigrationIfNeeded(session.token)
+  }
+
   if (auth.status === 'anonymous') {
-    return <AuthScreen onSignup={auth.signup} onLogin={auth.login} error={auth.error} />
+    return <AuthScreen onSignup={handleSignup} onLogin={auth.login} error={auth.error} />
   }
 
   return <AuthenticatedApp />

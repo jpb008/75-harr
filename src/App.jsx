@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { useAuth } from './hooks/useAuth'
+import { useSync } from './hooks/useSync'
 import { useChallenge } from './hooks/useChallenge'
 import { useAccentColor } from './hooks/useAccentColor'
 import { useBackgroundColor } from './hooks/useBackgroundColor'
@@ -13,8 +15,20 @@ import GoalsView from './components/GoalsView'
 import ProgressView from './components/ProgressView'
 import SettingsView from './components/SettingsView'
 import StartScreen from './components/StartScreen'
+import AuthScreen from './components/AuthScreen'
 
 export default function App() {
+  const auth = useAuth()
+  useSync(auth.token)
+
+  if (auth.status === 'anonymous') {
+    return <AuthScreen onSignup={auth.signup} onLogin={auth.login} error={auth.error} />
+  }
+
+  return <AuthenticatedApp />
+}
+
+function AuthenticatedApp() {
   const {
     challenge,
     days,

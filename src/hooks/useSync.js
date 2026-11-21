@@ -7,11 +7,23 @@ import { loadJSON, saveJSON } from '../lib/storage'
 // rather than requiring every existing hook to be rewritten. The server
 // stays the backup/sync target; local reads/writes keep working exactly
 // as before, online or offline.
-const SYNCED_KEYS = ['challenge', 'days', 'history', 'goals', 'celebratedMilestones', 'planDays']
+// `challenge` genuinely can be null (no active challenge); the rest should
+// never be — defaulting them to proper empty containers here stops a
+// missing/corrupted local value from ever being synced up as `null` and
+// poisoning another device (or this one, on the next pull).
+const SYNCED_KEY_DEFAULTS = {
+  challenge: null,
+  days: {},
+  history: [],
+  goals: [],
+  celebratedMilestones: {},
+  planDays: {},
+}
+const SYNCED_KEYS = Object.keys(SYNCED_KEY_DEFAULTS)
 
 function buildLocalBlob() {
   const blob = {}
-  for (const key of SYNCED_KEYS) blob[key] = loadJSON(key, null)
+  for (const key of SYNCED_KEYS) blob[key] = loadJSON(key, SYNCED_KEY_DEFAULTS[key])
   return blob
 }
 

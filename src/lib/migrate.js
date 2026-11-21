@@ -1,7 +1,19 @@
 import { apiFetch, apiConfigured } from './api'
 import { loadJSON, saveJSON } from './storage'
 
-const SYNCED_KEYS = ['challenge', 'days', 'history', 'goals', 'celebratedMilestones', 'planDays']
+// `challenge` genuinely can be null (no active challenge); the rest should
+// never be — defaulting to proper empty containers here stops the very
+// first write a new account ever makes from poisoning app_state with a
+// stray `null` that later crashes anything expecting an object/array.
+const SYNCED_KEY_DEFAULTS = {
+  challenge: null,
+  days: {},
+  history: [],
+  goals: [],
+  celebratedMilestones: {},
+  planDays: {},
+}
+const SYNCED_KEYS = Object.keys(SYNCED_KEY_DEFAULTS)
 const MIGRATED_FLAG_KEY = 'migratedToServer'
 
 export function detectLocalLegacyData() {
@@ -10,7 +22,7 @@ export function detectLocalLegacyData() {
 
 export function buildMigrationPayload() {
   const blob = {}
-  for (const key of SYNCED_KEYS) blob[key] = loadJSON(key, null)
+  for (const key of SYNCED_KEYS) blob[key] = loadJSON(key, SYNCED_KEY_DEFAULTS[key])
   return blob
 }
 

@@ -24,6 +24,7 @@ const SYNCED_KEY_DEFAULTS = {
   reminderPrefs: {},
   mealSwaps: {},
   mealChecks: {},
+  dailyHealth: {},
 }
 const SYNCED_KEYS = Object.keys(SYNCED_KEY_DEFAULTS)
 
@@ -48,7 +49,7 @@ function applyBlobToLocal(blob) {
 // Everything that belongs to the signed-in account. Cleared on logout so
 // the next person to sign in on this device never inherits (or uploads)
 // someone else's data.
-const ACCOUNT_LOCAL_KEYS = [...SYNCED_KEYS, 'plan', 'planAnswers', 'syncVersion', 'lastReviewedWeekStart', 'recoveryStatus']
+const ACCOUNT_LOCAL_KEYS = [...SYNCED_KEYS, 'plan', 'planAnswers', 'syncVersion', 'lastReviewedWeekStart', 'recoveryStatus', 'reportSeenMonth']
 
 export function clearAccountLocalData() {
   for (const key of ACCOUNT_LOCAL_KEYS) localStorage.removeItem(`75hard:${key}`)
@@ -56,9 +57,11 @@ export function clearAccountLocalData() {
 
 const PUSH_INTERVAL_MS = 30000
 
-export function useSync(token) {
-  // Tracks WHICH token finished its initial pull, so switching accounts
-  // (logout -> login) can't briefly render with the previous state.
+export function useSync(token, userId = token) {
+  // Tracks WHICH account finished its initial pull, so switching accounts
+  // (logout -> login) can't briefly render with the previous state. Keyed
+  // by user, not token: a new token for the same user (password change)
+  // keeps the app as it is instead of reloading it.
   const [hydratedFor, setHydratedFor] = useState(null)
   // Bumped whenever server data replaces local data after the app is up,
   // so the app remounts and every hook re-reads fresh state.
@@ -78,7 +81,7 @@ export function useSync(token) {
     } catch {
       // offline or unreachable — keep whatever's already local
     } finally {
-      setHydratedFor(token)
+      setHydratedFor(userId)
     }
   }
 
@@ -104,8 +107,15 @@ export function useSync(token) {
   }
 
   useEffect(() => {
-    if (!token || !apiConfigured()) return
-    pull()
+    if (!token) {
+      // Logged out: the next login (even to the same account) must pull.
+      setHydratedFor(null)
+      return
+    }
+    if (!apiConfigured()) return
+    // Same account, new token while still logged in (password change): no
+    // pull, which could overwrite unsynced local changes; keep syncing.
+    if (hydratedFor !== userId) pull()
     const interval = setInterval(push, PUSH_INTERVAL_MS)
     const onHide = () => {
       if (document.visibilityState === 'hidden') push()
@@ -118,6 +128,6 @@ export function useSync(token) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
-  const hydrated = !token || !apiConfigured() || hydratedFor === token
+  const hydrated = !token || !apiConfigured() || hydratedFor === userId
   return { hydrated, generation, pushNow: push }
 }

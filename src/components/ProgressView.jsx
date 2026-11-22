@@ -6,8 +6,10 @@ import HeatmapView from './HeatmapView'
 import PhotoTimeline from './PhotoTimeline'
 import BodyWeightCard from './BodyWeightCard'
 import TrendCharts from './TrendCharts'
+import WorkoutHistory from './WorkoutHistory'
+import MonthlyReport from './MonthlyReport'
 
-export default function ProgressView({ challenge, days, history, photoUrls, weighIns, setWeighIns, answers, weightUnit, onApplyCalorieAdjustment, plan, workoutLogs, mealChecks }) {
+export default function ProgressView({ challenge, days, history, photoUrls, weighIns, setWeighIns, answers, weightUnit, onApplyCalorieAdjustment, plan, workoutLogs, mealChecks, injuries, onSaveWorkout, onDeleteWorkout, dailyHealth, reportMonth }) {
   const todayStr = today()
   const cells = Array.from({ length: challenge.lengthDays }, (_, i) => {
     const dateStr = addDays(challenge.startDate, i)
@@ -51,7 +53,33 @@ export default function ProgressView({ challenge, days, history, photoUrls, weig
 
       {plan && (
         <div className="mb-8">
+          <MonthlyReport
+            key={reportMonth ?? 'current'}
+            initialMonth={reportMonth}
+            plan={plan}
+            workoutLogs={workoutLogs}
+            weighIns={weighIns}
+            mealChecks={mealChecks}
+            dailyHealth={dailyHealth}
+            challenge={challenge}
+            days={days}
+            unit={weightUnit}
+            mealsPerDay={answers?.personal?.mealsPerDay ?? 3}
+            todayStr={todayStr}
+            showWeight={Boolean(answers && !answers.meta?.safeMode)}
+          />
+        </div>
+      )}
+
+      {plan && (
+        <div className="mb-8">
           <TrendCharts plan={plan} workoutLogs={workoutLogs} weighIns={weighIns} mealChecks={mealChecks} answers={answers} weightUnit={weightUnit} todayStr={todayStr} />
+        </div>
+      )}
+
+      {plan && onSaveWorkout && (
+        <div className="mb-8">
+          <WorkoutHistory plan={plan} workoutLogs={workoutLogs} unit={weightUnit} injuries={injuries} todayStr={todayStr} onSave={onSaveWorkout} onDelete={onDeleteWorkout} />
         </div>
       )}
 

@@ -1,4 +1,4 @@
-import { Dumbbell, HeartPulse, BedDouble, Brain, Wallet, Apple, ChevronRight, Check, Quote, Footprints, NotebookPen, Zap, ShieldCheck } from 'lucide-react'
+import { Moon, Dumbbell, HeartPulse, BedDouble, Brain, Wallet, Apple, ChevronRight, Check, Quote, Footprints, NotebookPen, Zap, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
 import { mealCheckKey } from '../hooks/useMeals'
 import Disclaimer from './Disclaimer'
@@ -40,7 +40,7 @@ function formatReps(ex) {
   return ex.unit === 'seconds' ? `${ex.sets}×${range}s` : ex.unit === 'perSide' ? `${ex.sets}×${range}/side` : `${ex.sets}×${range}`
 }
 
-export default function TodayPlanSection({ plan, planDayApi, onOpenPlan, motivationWhy, workoutLogs = {}, weightUnit = 'lb', onSaveWorkoutLog, todayDateStr, injuries = [], meals }) {
+export default function TodayPlanSection({ plan, planDayApi, onOpenPlan, motivationWhy, workoutLogs = {}, weightUnit = 'lb', onSaveWorkoutLog, todayDateStr, injuries = [], meals, sleepAdvice }) {
   const [loggerOpen, setLoggerOpen] = useState(false)
   const mealPlan = meals?.mealPlan
   const todaysMeals = mealPlan ? { showNumbers: mealPlan.showNumbers, day: mealPlan.days.find((d) => d.dayOfWeek === new Date().getDay()) } : null
@@ -87,6 +87,12 @@ export default function TodayPlanSection({ plan, planDayApi, onOpenPlan, motivat
             title={todaysSession.label}
             subtitle={`About ${todaysSession.estimatedMinutes} min${todaysSession.format === 'superset' ? ' · supersets' : ''}`}
           />
+          {sleepAdvice && !workoutDone && (
+            <p className="mb-3 flex gap-2 rounded-xl border border-[var(--accent-a40)] bg-[var(--accent-a08)] px-3 py-2 text-xs text-[var(--ink-100)]">
+              <Moon size={14} className="text-[var(--accent-light)] shrink-0 mt-0.5" />
+              <span>{sleepAdvice}</span>
+            </p>
+          )}
           {todaysSession.type === 'cardio' ? (
             <p className="text-sm text-[var(--ink-200)] leading-relaxed">{todaysSession.cardio.description}</p>
           ) : (

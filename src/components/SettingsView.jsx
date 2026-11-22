@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Palette, Bell, Flame, UserRound } from 'lucide-react'
 import { SectionCard, Toggle } from './ui'
 import { RecoveryCodesPanel } from './RecoveryCodes'
+import { ChangePasswordForm, DeleteAccount } from './AccountControls'
 
 const REMINDER_OPTIONS = [
   { id: 'workout', label: 'Workout reminder', hint: 'At your planned workout time, on training days, if not done yet.' },
@@ -48,6 +49,8 @@ export default function SettingsView({
   token,
   recoveryStatus,
   setRecoveryStatus,
+  onTokenChange,
+  onAccountDeleted,
 }) {
   const [name, setName] = useState(challenge.name)
   const [lengthDays, setLengthDays] = useState(challenge.lengthDays)
@@ -284,6 +287,7 @@ export default function SettingsView({
         <div className="space-y-3">
           <p className="text-sm text-[var(--ink-300)] break-all">{email ?? ''}</p>
           <RecoveryCodesPanel token={token} email={email} status={recoveryStatus} setStatus={setRecoveryStatus} />
+          <ChangePasswordForm token={token} onTokenChange={onTokenChange} />
           <div className="flex gap-2">
             <button
               onClick={exportData}
@@ -298,6 +302,7 @@ export default function SettingsView({
               Log out
             </button>
           </div>
+          <DeleteAccount token={token} onDeleted={onAccountDeleted} />
         </div>
 
         </SectionCard>

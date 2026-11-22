@@ -38,3 +38,11 @@ export async function getRecoveryStatus(token) {
 export async function createRecoveryCodes(token) {
   return apiFetch('/auth/recovery-codes', { method: 'POST', token })
 }
+
+export async function changePassword(token, currentPassword, newPassword) {
+  return apiFetch('/auth/change-password', { method: 'POST', token, body: { currentPassword, newPassword } })
+}
+
+export async function deleteAccount(token, password) {
+  return apiFetch('/auth/delete-account', { method: 'POST', token, body: { password } })
+}

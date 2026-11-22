@@ -143,3 +143,40 @@ export async function handleRecover(request, env) {
   const remaining = await env.DB.prepare('SELECT COUNT(*) AS n FROM recovery_codes WHERE user_id = ?1 AND used_at IS NULL').bind(user.id).first()
   return json({ token: await issueToken(env, user.id), userId: user.id, remaining: remaining?.n ?? 0 })
 }
+
+// Change password while logged in. Signs out every other device.
+export async function handleChangePassword(request, env) {
+  const auth = await authMiddleware(request, env)
+  if (!auth) return error('Unauthorized', 401)
+  const { currentPassword, newPassword } = await request.json()
+  if (typeof newPassword !== 'string' || newPassword.length < 8) return error('New password must be at least 8 characters.')
+  const user = await env.DB.prepare('SELECT id, password_hash FROM users WHERE id = ?1').bind(auth.userId).first()
+  if (!user) return error('Unauthorized', 401)
+  if (!(await verifyPassword(currentPassword ?? '', user.password_hash))) return error('Your current password is wrong.', 403)
+  const now = Math.floor(Date.now() / 1000)
+  await env.DB.prepare('UPDATE users SET password_hash = ?1, password_changed_at = ?2 WHERE id = ?3')
+    .bind(await hashPassword(newPassword), now, user.id)
+    .run()
+  return json({ token: await issueToken(env, user.id) })
+}
+
+// Permanently deletes the account and everything stored for it.
+export async function handleDeleteAccount(request, env) {
+  const auth = await authMiddleware(request, env)
+  if (!auth) return error('Unauthorized', 401)
+  const { password } = await request.json()
+  const user = await env.DB.prepare('SELECT id, password_hash FROM users WHERE id = ?1').bind(auth.userId).first()
+  if (!user) return error('Unauthorized', 401)
+  if (!(await verifyPassword(password ?? '', user.password_hash))) return error('Your password is wrong.', 403)
+  const id = user.id
+  await env.DB.batch([
+    env.DB.prepare('DELETE FROM recovery_codes WHERE user_id = ?1').bind(id),
+    env.DB.prepare('DELETE FROM subscriptions WHERE user_id = ?1').bind(id),
+    env.DB.prepare('DELETE FROM weekly_reviews WHERE user_id = ?1').bind(id),
+    env.DB.prepare('DELETE FROM plans WHERE user_id = ?1').bind(id),
+    env.DB.prepare('DELETE FROM onboarding_answers WHERE user_id = ?1').bind(id),
+    env.DB.prepare('DELETE FROM app_state WHERE user_id = ?1').bind(id),
+    env.DB.prepare('DELETE FROM users WHERE id = ?1').bind(id),
+  ])
+  return json({ deleted: true })
+}

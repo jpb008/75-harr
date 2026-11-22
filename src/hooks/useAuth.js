@@ -88,6 +88,14 @@ export function useAuth() {
     }
   }
 
+  // After a password change the server issues a new token (older ones,
+  // including this device's, stop working).
+  function replaceToken(token) {
+    const next = { ...session, token }
+    authApi.setStoredSession(next)
+    setSession(next)
+  }
+
   function logout() {
     authApi.clearStoredSession()
     setSession(null)
@@ -103,6 +111,7 @@ export function useAuth() {
     signup,
     login,
     recover,
+    replaceToken,
     logout,
   }
 }

@@ -23,7 +23,8 @@ function initialRows(ex, existing, suggestion, unit) {
   })
 }
 
-export default function WorkoutLogger({ session, workoutLogs, todayStr, unit, injuries = [], onSave, onClose }) {
+export default function WorkoutLogger({ session, workoutLogs, todayStr, unit, injuries = [], onSave, onClose, dateLabel, onDelete }) {
+  const [confirmDelete, setConfirmDelete] = useState(false)
   const todays = workoutLogs[todayStr]?.entries ?? {}
   const rest = useRestTimer()
   const [tipsOpen, setTipsOpen] = useState({})
@@ -56,7 +57,7 @@ export default function WorkoutLogger({ session, workoutLogs, todayStr, unit, in
       <div className="sticky top-0 z-10 bg-[var(--ink-950)]/90 backdrop-blur-md border-b border-[var(--ink-800)]">
         <div className="max-w-xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-xs text-[var(--ink-300)] uppercase tracking-[0.15em]">Log workout</p>
+            <p className="text-xs text-[var(--ink-300)] uppercase tracking-[0.15em]">{dateLabel ? `Workout · ${dateLabel}` : 'Log workout'}</p>
             <h2 className="text-[var(--ink-50)] font-semibold truncate">{session.label}</h2>
           </div>
           <button type="button" onClick={onClose} aria-label="Close" className="h-9 w-9 rounded-full flex items-center justify-center text-[var(--ink-300)] hover:text-[var(--ink-50)] hover:bg-[var(--ink-800)]">
@@ -188,6 +189,26 @@ export default function WorkoutLogger({ session, workoutLogs, todayStr, unit, in
             <div className="mb-3 rounded-2xl border border-[var(--success)] bg-[var(--ink-900)] p-3 flex items-center gap-2 animate-fade-in" role="status">
               <BellRing size={18} className="text-[var(--success)] shrink-0" />
               <p className="text-sm font-medium text-[var(--ink-50)]">Rest's up — next set!</p>
+            </div>
+          )}
+          {onDelete && (
+            <div className="mb-2 text-center">
+              {confirmDelete ? (
+                <p className="text-sm text-[var(--ink-200)]">
+                  Delete this day's log?{' '}
+                  <button type="button" onClick={onDelete} className="font-semibold text-[var(--danger)] hover:underline">
+                    Delete
+                  </button>{' '}
+                  ·{' '}
+                  <button type="button" onClick={() => setConfirmDelete(false)} className="text-[var(--ink-300)] hover:underline">
+                    Keep
+                  </button>
+                </p>
+              ) : (
+                <button type="button" onClick={() => setConfirmDelete(true)} className="text-xs text-[var(--danger)] hover:underline">
+                  Delete this log
+                </button>
+              )}
             </div>
           )}
           <Button onClick={save} disabled={loggedCount === 0} className="w-full">

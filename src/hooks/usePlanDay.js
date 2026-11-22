@@ -29,5 +29,7 @@ export function usePlanDay(plan) {
     toggleFinancial: (actionId) => update(toggleFinancialAction(planDays, todayStr, actionId)),
     isFinancialDone: (actionId) => isFinancialActionDone(planDays, todayStr, actionId),
     setWorkoutDone: (completed) => update(setWorkoutDone(planDays, todayStr, todaysSession?.dayOfWeek ?? null, completed)),
+    // For logging or editing a past day's workout.
+    setWorkoutDoneOn: (dateStr, sessionDayOfWeek, completed) => update(setWorkoutDone(loadPlanDays(), dateStr, sessionDayOfWeek, completed)),
   }
 }

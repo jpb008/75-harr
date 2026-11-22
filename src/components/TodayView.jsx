@@ -5,6 +5,8 @@ import ProgressPhotoCard from './ProgressPhotoCard'
 import MilestoneOverlay from './MilestoneOverlay'
 import ShareCardModal from './ShareCardModal'
 import TodayPlanSection from './TodayPlanSection'
+import WaterSleepCard from './WaterSleepCard'
+import { lowSleepAdvice } from '../lib/dailyHealth'
 import { Flame, CheckCircle2, Share2 } from 'lucide-react'
 import { Card, ProgressRing } from './ui'
 
@@ -30,8 +32,10 @@ export default function TodayView({
   injuries,
   answers,
   meals,
+  health,
   recoveryStatus,
   onOpenRecovery,
+  reportBanner,
 }) {
   const [shareOpen, setShareOpen] = useState(false)
   const percent = challenge.tasks.length
@@ -54,6 +58,7 @@ export default function TodayView({
       </div>
 
       <RecoveryBanner status={recoveryStatus} onOpen={onOpenRecovery} />
+      {reportBanner}
 
       <Card className="p-5 mb-5 overflow-hidden relative">
         <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[var(--accent-a15)] blur-2xl pointer-events-none" />
@@ -135,6 +140,12 @@ export default function TodayView({
         </p>
       )}
 
+      {health && (
+        <div className="mt-6">
+          <WaterSleepCard {...health} />
+        </div>
+      )}
+
       <div className="mt-6">
         <ProgressPhotoCard dateStr={todayDateStr} photoUrl={photoUrl} onSetPhoto={onSetPhoto} />
       </div>
@@ -155,6 +166,7 @@ export default function TodayView({
           injuries={injuries}
           answers={answers}
           meals={meals}
+          sleepAdvice={health ? lowSleepAdvice(health.sleep) : null}
         />}
 
       {shareOpen && (

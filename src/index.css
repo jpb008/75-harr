@@ -142,3 +142,15 @@ input[type='time']::-webkit-date-and-time-value {
 ::selection {
   background-color: var(--accent-a35);
 }
+
+/* Number fields: no tiny spinner arrows (easy to hit by accident, and
+   they eat space in narrow inputs). Typing and the phone keypad work. */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}

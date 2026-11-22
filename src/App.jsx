@@ -22,6 +22,12 @@ import ProgressView from './components/ProgressView'
 import SettingsView from './components/SettingsView'
 import { useRecoveryStatus } from './components/RecoveryCodes'
 import { useMeals } from './hooks/useMeals'
+import { findNewPRs } from './lib/plan/trends'
+import PrCelebration from './components/PrCelebration'
+import { waterGoalMl, waterTask, sleepSummary } from './lib/dailyHealth'
+import { previousMonthKey, reportMonths } from './lib/plan/monthlyReport'
+import { MonthlyReportBanner } from './components/MonthlyReport'
+import { loadJSON, saveJSON } from './lib/storage'
 import StartScreen from './components/StartScreen'
 import AuthScreen from './components/AuthScreen'
 import OnboardingFlow from './components/onboarding/OnboardingFlow'
@@ -32,7 +38,7 @@ import { applyCalorieAdjustment } from './lib/plan/bodyweight'
 
 export default function App() {
   const auth = useAuth()
-  const sync = useSync(auth.token)
+  const sync = useSync(auth.token, auth.userId)
 
   async function handleSignup(email, password) {
     const session = await auth.signup(email, password)
@@ -59,10 +65,25 @@ export default function App() {
   // overwrite the real one.
   if (!sync.hydrated) return null
 
-  return <AuthenticatedApp key={sync.generation} token={auth.token} email={auth.email} onLogout={handleLogout} />
+  function handleAccountDeleted() {
+    // Server data is gone; wipe this device and return to the sign-up screen.
+    clearAccountLocalData()
+    auth.logout()
+  }
+
+  return (
+    <AuthenticatedApp
+      key={sync.generation}
+      token={auth.token}
+      email={auth.email}
+      onLogout={handleLogout}
+      onTokenChange={auth.replaceToken}
+      onAccountDeleted={handleAccountDeleted}
+    />
+  )
 }
 
-function AuthenticatedApp({ token, email, onLogout }) {
+function AuthenticatedApp({ token, email, onLogout, onTokenChange, onAccountDeleted }) {
   const {
     challenge,
     days,
@@ -94,12 +115,64 @@ function AuthenticatedApp({ token, email, onLogout }) {
   const [reminderPrefs, setReminderPrefs] = useStoredState('reminderPrefs', {})
   const [recoveryStatus, setRecoveryStatus] = useRecoveryStatus(token)
   const meals = useMeals(plan.plan, plan.answers)
+  const [prCelebration, setPrCelebration] = useState(null)
+  const [dailyHealth, setDailyHealth] = useStoredState('dailyHealth', {})
+  const [reportSeenMonth, setReportSeenMonthState] = useState(() => loadJSON('reportSeenMonth', null))
+  const [reportMonth, setReportMonth] = useState(null)
+
+  // Saves a day's workout (today or a past day), marks that day's workout
+  // done, and celebrates any personal records.
+  function saveWorkoutLog(dateStr, session, entries) {
+    const prs = findNewPRs(workoutLogs, dateStr, entries, weightUnit)
+    setWorkoutLogs((prev) => ({ ...prev, [dateStr]: { sessionId: session?.id ?? null, entries } }))
+    planDayApi.setWorkoutDoneOn(dateStr, session?.dayOfWeek ?? null, true)
+    if (prs.length) setPrCelebration(prs)
+  }
+
+  function deleteWorkoutLog(dateStr, session) {
+    setWorkoutLogs((prev) => {
+      const next = { ...prev }
+      delete next[dateStr]
+      return next
+    })
+    planDayApi.setWorkoutDoneOn(dateStr, session?.dayOfWeek ?? null, false)
+  }
   const weightUnit = plan.answers?.personal?.units === 'metric' ? 'kg' : 'lb'
   const [tab, setTab] = useState('today')
   const [planSection, setPlanSection] = useState('workouts')
   const [reviewOpen, setReviewOpen] = useState(false)
 
   const todayDateStr = today()
+  const todayHealth = dailyHealth[todayDateStr] ?? {}
+  const waterGoal = waterGoalMl(challenge, plan.plan)
+  const gallonTask = waterTask(challenge)
+  const sleep = sleepSummary(dailyHealth, todayDateStr)
+  const units = plan.answers?.personal?.units === 'metric' ? 'metric' : 'imperial'
+
+  // First week of a month: offer last month's report if there's data for it.
+  const lastMonth = previousMonthKey(todayDateStr)
+  const showReportBanner =
+    Number(todayDateStr.slice(8, 10)) <= 7 &&
+    reportSeenMonth !== lastMonth &&
+    reportMonths({ workoutLogs, weighIns, mealChecks: meals.checks, dailyHealth }).includes(lastMonth)
+  function markReportSeen() {
+    saveJSON('reportSeenMonth', lastMonth)
+    setReportSeenMonthState(lastMonth)
+  }
+
+  function updateTodayHealth(patch) {
+    setDailyHealth((prev) => ({ ...prev, [todayDateStr]: { ...(prev[todayDateStr] ?? {}), ...patch } }))
+  }
+
+  function addWater(ml) {
+    // Rounded to 0.1 ml so repeated taps don't drift; >= goal - 1 absorbs rounding.
+    const next = Math.max(0, Math.round(((todayHealth.waterMl ?? 0) + ml) * 10) / 10)
+    // Reaching the goal ticks the challenge's water task once; if the user
+    // unticks it afterwards, it stays unticked.
+    const tick = next >= waterGoal - 1 && gallonTask && !todayHealth.autoTicked && !todayRecord.completedTaskIds.includes(gallonTask.id)
+    updateTodayHealth({ waterMl: next, ...(tick ? { autoTicked: true } : {}) })
+    if (tick) toggleTask(gallonTask.id)
+  }
 
   useEffect(() => {
     if (weeklyReview.isDue) {
@@ -165,7 +238,31 @@ function AuthenticatedApp({ token, email, onLogout }) {
           answers={plan.answers}
           meals={meals}
           todayDateStr={todayDateStr}
+          health={{
+            waterMl: todayHealth.waterMl ?? 0,
+            goalMl: waterGoal,
+            units,
+            onAddWater: addWater,
+            sleep,
+            onSetSleep: (sleepHours) => updateTodayHealth({ sleepHours }),
+            waterTaskLabel: gallonTask?.label,
+            autoTicked: Boolean(todayHealth.autoTicked),
+          }}
           recoveryStatus={recoveryStatus}
+          reportBanner={
+            showReportBanner ? (
+              <MonthlyReportBanner
+                monthKey={lastMonth}
+                onDismiss={markReportSeen}
+                onOpen={() => {
+                  markReportSeen()
+                  setReportMonth(lastMonth)
+                  setTab('progress')
+                  window.scrollTo({ top: 0 })
+                }}
+              />
+            ) : null
+          }
           onOpenRecovery={() => {
             setTab('settings')
             setTimeout(() => document.getElementById('account')?.scrollIntoView({ block: 'start' }), 50)
@@ -173,7 +270,7 @@ function AuthenticatedApp({ token, email, onLogout }) {
           workoutLogs={workoutLogs}
           weightUnit={weightUnit}
           injuries={plan.answers ? normalizeAnswers(plan.answers).training.injuries : []}
-          onSaveWorkoutLog={(sessionId, entries) => setWorkoutLogs((prev) => ({ ...prev, [todayDateStr]: { sessionId, entries } }))}
+          onSaveWorkoutLog={(sessionId, entries) => saveWorkoutLog(todayDateStr, planDayApi.todaysSession, entries)}
         />
       )}
       {tab === 'goals' && (
@@ -197,6 +294,11 @@ function AuthenticatedApp({ token, email, onLogout }) {
           plan={plan.plan}
           workoutLogs={workoutLogs}
           mealChecks={meals.checks}
+          injuries={plan.answers ? normalizeAnswers(plan.answers).training.injuries : []}
+          onSaveWorkout={saveWorkoutLog}
+          onDeleteWorkout={deleteWorkoutLog}
+          dailyHealth={dailyHealth}
+          reportMonth={reportMonth}
           onApplyCalorieAdjustment={(delta) =>
             plan.savePlan(applyCalorieAdjustment(plan.answers, delta, todayDateStr), { source: 'calorie_adjustment' })
           }
@@ -222,8 +324,11 @@ function AuthenticatedApp({ token, email, onLogout }) {
           token={token}
           recoveryStatus={recoveryStatus}
           setRecoveryStatus={setRecoveryStatus}
+          onTokenChange={onTokenChange}
+          onAccountDeleted={onAccountDeleted}
         />
       )}
+      {prCelebration && <PrCelebration prs={prCelebration} onDismiss={() => setPrCelebration(null)} />}
       <NavTabs
         active={tab}
         onChange={(next) => {

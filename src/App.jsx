@@ -92,6 +92,7 @@ function AuthenticatedApp({ token, email, onLogout }) {
   const [reminderPrefs, setReminderPrefs] = useStoredState('reminderPrefs', {})
   const weightUnit = plan.answers?.personal?.units === 'metric' ? 'kg' : 'lb'
   const [tab, setTab] = useState('today')
+  const [planSection, setPlanSection] = useState('workouts')
   const [reviewOpen, setReviewOpen] = useState(false)
 
   const todayDateStr = today()
@@ -151,11 +152,13 @@ function AuthenticatedApp({ token, email, onLogout }) {
           notificationsEnabled={notifications.enabled}
           plan={plan.plan}
           planDayApi={planDayApi}
-          onOpenPlan={() => {
+          onOpenPlan={(section = 'workouts') => {
+            setPlanSection(section)
             setTab('plan')
             window.scrollTo({ top: 0 })
           }}
           motivationWhy={plan.answers?.fitnessGoals?.motivationWhy || null}
+          answers={plan.answers}
           workoutLogs={workoutLogs}
           weightUnit={weightUnit}
           injuries={plan.answers ? normalizeAnswers(plan.answers).training.injuries : []}
@@ -185,7 +188,7 @@ function AuthenticatedApp({ token, email, onLogout }) {
           }
         />
       )}
-      {tab === 'plan' && <PlanView plan={plan} workoutLogs={workoutLogs} weightUnit={weightUnit} incomeLogs={incomeLogs} setIncomeLogs={setIncomeLogs} />}
+      {tab === 'plan' && <PlanView key={planSection} initialSection={planSection} plan={plan} workoutLogs={workoutLogs} weightUnit={weightUnit} incomeLogs={incomeLogs} setIncomeLogs={setIncomeLogs} />}
       {tab === 'settings' && (
         <SettingsView
           challenge={challenge}
@@ -204,7 +207,14 @@ function AuthenticatedApp({ token, email, onLogout }) {
           setReminderPrefs={setReminderPrefs}
         />
       )}
-      <NavTabs active={tab} onChange={(next) => { setTab(next); window.scrollTo({ top: 0 }) }} />
+      <NavTabs
+        active={tab}
+        onChange={(next) => {
+          if (next === 'plan') setPlanSection('workouts')
+          setTab(next)
+          window.scrollTo({ top: 0 })
+        }}
+      />
       {reviewOpen && (
         <WeeklyReviewModal
           proposals={weeklyReview.proposals}

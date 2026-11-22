@@ -1,6 +1,6 @@
 import { SKILLS } from './options'
 
-export const QUESTIONNAIRE_VERSION = 2
+export const QUESTIONNAIRE_VERSION = 3
 
 const LEGACY_FITNESS_LEVEL_TO_EXPERIENCE = {
   beginner: 'under6mo',
@@ -76,6 +76,14 @@ export function normalizeAnswers(raw) {
     dietRestrictions: arr(p.dietRestrictions),
     cookingTime: p.cookingTime ?? 'some',
     mealsPerDay: num(p.mealsPerDay) ?? 3,
+    kitchenAccess: p.kitchenAccess ?? 'full',
+    groceryBudget: p.groceryBudget ?? 'moderate',
+    foodDislikes: arr(p.foodDislikes),
+    cuisines: arr(p.cuisines),
+    eatsBreakfast: p.eatsBreakfast ?? 'yes',
+    proteinShakes: p.proteinShakes ?? 'yes',
+    mealPrepStyle: p.mealPrepStyle ?? 'fresh',
+    mealVariety: p.mealVariety ?? 'some',
   }
 
   const training = {

@@ -16,7 +16,7 @@ import ReviewStep from './ReviewStep'
 const STEPS = [
   { id: 'about', title: 'About you', subtitle: 'The basics we use to size your plan.', Component: AboutStep },
   { id: 'health', title: 'Sleep, stress & health', subtitle: 'Recovery shapes how hard your plan should push.', Component: HealthStep },
-  { id: 'food', title: 'Food preferences', subtitle: 'So nutrition tips fit how you actually eat.', Component: FoodStep },
+  { id: 'food', title: 'Food & meal plan', subtitle: 'Your 7-day meal plan is built from these answers.', Component: FoodStep },
   { id: 'background', title: 'Training background', subtitle: 'A quick fitness check so we start at the right level.', Component: TrainingBackgroundStep },
   { id: 'schedule', title: 'Schedule & equipment', subtitle: 'Your routine is built around the time and gear you have.', Component: ScheduleStep },
   {

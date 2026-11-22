@@ -1,5 +1,6 @@
 import { Dumbbell, HeartPulse, BedDouble, Brain, Wallet, Apple, ChevronRight, Check, Quote, Footprints, NotebookPen, Zap, ShieldCheck } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
+import { generateMealPlan } from '../lib/plan/mealPlan'
 import Disclaimer from './Disclaimer'
 import WorkoutLogger from './WorkoutLogger'
 import { Card, IconBadge } from './ui'
@@ -39,8 +40,14 @@ function formatReps(ex) {
   return ex.unit === 'seconds' ? `${ex.sets}×${range}s` : ex.unit === 'perSide' ? `${ex.sets}×${range}/side` : `${ex.sets}×${range}`
 }
 
-export default function TodayPlanSection({ plan, planDayApi, onOpenPlan, motivationWhy, workoutLogs = {}, weightUnit = 'lb', onSaveWorkoutLog, todayDateStr, injuries = [] }) {
+export default function TodayPlanSection({ plan, planDayApi, onOpenPlan, motivationWhy, workoutLogs = {}, weightUnit = 'lb', onSaveWorkoutLog, todayDateStr, injuries = [], answers }) {
   const [loggerOpen, setLoggerOpen] = useState(false)
+  const todaysMeals = useMemo(() => {
+    if (!answers || !plan) return null
+    const trainingDays = [...new Set(plan.workout.sessions.map((s) => s.dayOfWeek))]
+    const mealPlan = generateMealPlan(answers, trainingDays)
+    return { showNumbers: mealPlan.showNumbers, day: mealPlan.days.find((d) => d.dayOfWeek === new Date().getDay()) }
+  }, [answers, plan])
   if (!plan) return null
   const { todayRecord, todaysSession, toggleMentalDev, toggleFinancial, isFinancialDone, setWorkoutDone } = planDayApi
   const todayDow = new Date().getDay()
@@ -62,7 +69,7 @@ export default function TodayPlanSection({ plan, planDayApi, onOpenPlan, motivat
     <div className="mt-8 space-y-4">
       <div className="flex items-center justify-between px-1">
         <h2 className="text-xs uppercase tracking-[0.15em] text-[var(--ink-300)] font-semibold">Your plan today</h2>
-        <button type="button" onClick={onOpenPlan} className="text-xs font-medium text-[var(--accent-light)] inline-flex items-center gap-0.5">
+        <button type="button" onClick={() => onOpenPlan()} className="text-xs font-medium text-[var(--accent-light)] inline-flex items-center gap-0.5">
           Full plan <ChevronRight size={14} />
         </button>
       </div>
@@ -138,7 +145,7 @@ export default function TodayPlanSection({ plan, planDayApi, onOpenPlan, motivat
             ) : (
               <button
                 type="button"
-                onClick={onOpenPlan}
+                onClick={() => onOpenPlan()}
                 className="rounded-xl border border-[var(--ink-700)] py-2.5 text-sm font-medium text-[var(--ink-100)] hover:border-[var(--ink-600)]"
               >
                 Warm-up & details
@@ -155,7 +162,7 @@ export default function TodayPlanSection({ plan, planDayApi, onOpenPlan, motivat
             </button>
           </div>
           {todaysSession.type === 'strength' && (
-            <button type="button" onClick={onOpenPlan} className="w-full text-center text-xs text-[var(--ink-300)] hover:text-[var(--ink-50)] mt-2.5">
+            <button type="button" onClick={() => onOpenPlan()} className="w-full text-center text-xs text-[var(--ink-300)] hover:text-[var(--ink-50)] mt-2.5">
               Warm-up, form tips & videos in the Plan tab
             </button>
           )}
@@ -222,7 +229,29 @@ export default function TodayPlanSection({ plan, planDayApi, onOpenPlan, motivat
 
       {plan.nutrition && (
         <Card className="p-4">
-          <CardHeader icon={Apple} title="Nutrition" />
+          <CardHeader
+            icon={Apple}
+            title="Today's meals"
+            subtitle={todaysMeals?.showNumbers && todaysMeals.day ? `${todaysMeals.day.totals.kcal} kcal · ${todaysMeals.day.totals.p} g protein` : null}
+            right={
+              <button type="button" onClick={() => onOpenPlan('nutrition')} className="text-xs font-medium text-[var(--accent-light)] inline-flex items-center gap-0.5 shrink-0">
+                Recipes <ChevronRight size={14} />
+              </button>
+            }
+          />
+          {todaysMeals?.day && (
+            <ul className="divide-y divide-[var(--ink-800)] mb-3">
+              {todaysMeals.day.meals.map((meal, i) => (
+                <li key={i} className="flex items-center justify-between gap-3 py-2">
+                  <span className="min-w-0">
+                    <span className="block text-[11px] uppercase tracking-wide text-[var(--ink-400)]">{meal.slotLabel}</span>
+                    <span className="block text-sm text-[var(--ink-100)] truncate">{meal.name}</span>
+                  </span>
+                  {todaysMeals.showNumbers && <span className="text-xs text-[var(--ink-300)] tabular-nums shrink-0">{meal.kcal} kcal</span>}
+                </li>
+              ))}
+            </ul>
+          )}
           {plan.nutrition.safeMode ? (
             <ul className="text-sm text-[var(--ink-200)] space-y-1.5 list-disc pl-4">
               {plan.nutrition.habits.map((habit, i) => (

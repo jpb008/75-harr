@@ -1,6 +1,9 @@
-import { Flame, Beef, Droplets, Wheat, Scale, UtensilsCrossed, Clock, Leaf } from 'lucide-react'
+import { Flame, Beef, Droplets, Wheat, Scale, Clock, Leaf } from 'lucide-react'
 import { Card, SectionCard, Chip, IconBadge } from '../ui'
+import { useMemo } from 'react'
 import Disclaimer from '../Disclaimer'
+import MealPlanView from './MealPlanView'
+import { generateMealPlan } from '../../lib/plan/mealPlan'
 
 function Stat({ icon, label, value, sub }) {
   return (
@@ -28,10 +31,11 @@ function List({ items }) {
   )
 }
 
-export default function NutritionTab({ plan }) {
+export default function NutritionTab({ plan, answers }) {
   const n = plan.nutrition
   const foods = n.proteinFoods ?? []
-  const meals = n.mealIdeas ?? []
+  const trainingDays = useMemo(() => [...new Set(plan.workout.sessions.map((x) => x.dayOfWeek))], [plan])
+  const mealPlan = useMemo(() => (answers ? generateMealPlan(answers, trainingDays) : null), [answers, trainingDays])
 
   return (
     <div className="space-y-4">
@@ -79,6 +83,8 @@ export default function NutritionTab({ plan }) {
         </>
       )}
 
+      {mealPlan && <MealPlanView mealPlan={mealPlan} />}
+
       {foods.length > 0 && (
         <SectionCard icon={Beef} title="Protein foods that fit your diet">
           <div className="flex flex-wrap gap-2">
@@ -88,12 +94,6 @@ export default function NutritionTab({ plan }) {
               </Chip>
             ))}
           </div>
-        </SectionCard>
-      )}
-
-      {meals.length > 0 && (
-        <SectionCard icon={UtensilsCrossed} title="Meal ideas for your cooking time">
-          <List items={meals} />
         </SectionCard>
       )}
 

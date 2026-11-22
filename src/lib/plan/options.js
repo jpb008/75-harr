@@ -70,6 +70,35 @@ export const COOKING_TIME = [
   { id: 'lots', label: 'I enjoy cooking', hint: 'Happy to meal prep' },
 ]
 
+export const KITCHEN_ACCESS = [
+  { id: 'full', label: 'Full kitchen', hint: 'Stove, oven and fridge' },
+  { id: 'microwave', label: 'Microwave + fridge only', hint: 'Dorm room, office or shared space' },
+  { id: 'none', label: 'No kitchen', hint: 'Only food that needs no cooking' },
+]
+
+export const GROCERY_BUDGETS = [
+  { id: 'tight', label: 'Tight', hint: 'Cheapest options first: eggs, beans, chicken, oats' },
+  { id: 'moderate', label: 'Moderate' },
+  { id: 'flexible', label: 'Flexible', hint: 'Salmon, shrimp and the like are fine' },
+]
+
+export const BREAKFAST_HABITS = [
+  { id: 'yes', label: 'Yes' },
+  { id: 'sometimes', label: 'Sometimes' },
+  { id: 'no', label: 'I skip it' },
+]
+
+export const MEAL_PREP_STYLES = [
+  { id: 'fresh', label: 'Cook as I go', hint: 'Quick meals made fresh each day' },
+  { id: 'batch', label: 'Batch cook', hint: 'Cook twice a week, eat leftovers' },
+]
+
+export const MEAL_VARIETY = [
+  { id: 'same', label: 'Same few meals', hint: 'Simple, easy shopping' },
+  { id: 'some', label: 'Some variety' },
+  { id: 'lots', label: 'Lots of variety', hint: 'Different meals most days' },
+]
+
 export const EXPERIENCE_LEVELS = [
   { id: 'none', label: 'Never trained consistently' },
   { id: 'under6mo', label: 'Less than 6 months' },

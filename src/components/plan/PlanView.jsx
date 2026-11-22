@@ -72,7 +72,9 @@ export default function PlanView({ plan: planApi, initialSection = 'workouts', w
             <div>
               <p className="text-sm font-semibold text-[var(--ink-50)]">Get a more personalized plan</p>
               <p className="text-sm text-[var(--ink-200)] mt-1">
-                We now ask much more detailed questions — fitness check, schedule, equipment, sleep, food, learning style and more.
+                {(answers?.meta?.questionnaireVersion ?? 1) >= 2
+                  ? 'New: a 7-day meal plan with recipes and a grocery list. Answer a few food questions (kitchen, budget, foods you avoid, cuisines) to build it around you.'
+                  : 'We now ask much more detailed questions — fitness check, schedule, equipment, sleep, food, learning style and more.'}{' '}
                 Your current answers are pre-filled; just fill in the new ones.
               </p>
               <Button className="mt-3" onClick={() => setEditing(true)}>
@@ -105,7 +107,7 @@ export default function PlanView({ plan: planApi, initialSection = 'workouts', w
 
       <div key={section} className="animate-fade-in">
         {section === 'workouts' && <WorkoutTab plan={plan} answers={normalized} workoutLogs={workoutLogs} weightUnit={weightUnit} />}
-        {section === 'nutrition' && <NutritionTab plan={plan} />}
+        {section === 'nutrition' && <NutritionTab plan={plan} answers={normalized} />}
         {section === 'mind' && <MindTab plan={plan} />}
         {section === 'money' && <MoneyTab plan={plan} incomeLogs={incomeLogs} setIncomeLogs={setIncomeLogs} />}
         {section === 'learn' && <LearnTab answers={normalized} />}

@@ -27,6 +27,7 @@ export default function TodayView({
   weightUnit,
   onSaveWorkoutLog,
   injuries,
+  answers,
 }) {
   const [shareOpen, setShareOpen] = useState(false)
   const percent = challenge.tasks.length
@@ -146,6 +147,7 @@ export default function TodayView({
           onSaveWorkoutLog={onSaveWorkoutLog}
           todayDateStr={todayDateStr}
           injuries={injuries}
+          answers={answers}
         />}
 
       {shareOpen && (

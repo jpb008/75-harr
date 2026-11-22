@@ -82,7 +82,7 @@ export default function FinancialGoalsStep({ answers, update }) {
             </Field>
           </SectionCard>
 
-          <SectionCard icon={PiggyBank} title="Money basics" hint="These add simple weekly habits from consumer-finance guidance (CFPB/FDIC). Not financial advice.">
+          <SectionCard icon={PiggyBank} title="Money basics" hint="These add simple weekly habits based on government consumer-finance guidance. Not financial advice.">
             <Field label="Emergency savings (months of expenses)">
               <ChipGroup
                 options={EMERGENCY_FUND_LEVELS}

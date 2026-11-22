@@ -50,6 +50,7 @@ export function normalizeAnswers(raw) {
   const personal = {
     age,
     sex: p.sex ?? 'unspecified',
+    country: p.country ?? null,
     heightCm: num(p.heightCm),
     weightKg: num(p.weightKg) ?? num(f.fatLoss?.currentWeightKg),
     units: p.units ?? 'imperial',

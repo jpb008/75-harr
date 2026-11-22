@@ -83,10 +83,16 @@ function scoreResource(resource, { weights, preferredTypes, level, budget }) {
   return { score, matched }
 }
 
+// Region-specific sources (tax agencies, national consumer-finance
+// bodies) only show to people in that country; an unknown country sees all.
+function fitsRegion(resource, country) {
+  return !resource.region || !country || resource.region === country
+}
+
 function pick(weights, ctx, { limit, types, exclude }) {
   const ranked = []
   for (const resource of RESOURCES) {
-    if (exclude.has(resource.id)) continue
+    if (exclude.has(resource.id) || !fitsRegion(resource, ctx.country)) continue
     if (types && !types.includes(resource.type)) continue
     const result = scoreResource(resource, { ...ctx, weights })
     if (result) ranked.push({ resource, ...result })
@@ -113,7 +119,7 @@ function weightsFrom(tags, boost = []) {
   return weights
 }
 
-function keywordMatches(text, exclude, budget) {
+function keywordMatches(text, exclude, budget, country) {
   const words = text
     .toLowerCase()
     .split(/[^a-z0-9+#]+/)
@@ -125,7 +131,7 @@ function keywordMatches(text, exclude, budget) {
     const stem = word.length >= 7 ? word.replace(/(ism|ing)$/, '') : word
     const pattern = new RegExp(`\\b${stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`, 'i')
     const hits = RESOURCES.filter((r) => {
-      if (exclude.has(r.id) || (budget === 'free' && !r.free)) return false
+      if (exclude.has(r.id) || (budget === 'free' && !r.free) || !fitsRegion(r, country)) return false
       return pattern.test(`${r.title} ${r.summary} ${r.tags.join(' ')}`)
     }).slice(0, 2)
     if (!hits.length) unmatched.push(word)
@@ -159,7 +165,7 @@ export function recommendResources(rawAnswers) {
   if (a.personal.sleepQuality === 'poor' || (a.personal.sleepHours != null && a.personal.sleepHours < 7)) fitnessTags.push('sleep')
   if (a.fitnessGoals.pastObstacles.includes('soreness')) fitnessTags.push('recovery')
   if (a.fitnessGoals.tightAreas.length) fitnessTags.push('mobility')
-  const fitnessCtx = { preferredTypes, level: userLevel(a.training.experience), budget }
+  const fitnessCtx = { preferredTypes, level: userLevel(a.training.experience), budget, country: a.personal.country }
   if (fitnessTags.length) {
     sections.push({
       id: 'fitness',
@@ -222,7 +228,7 @@ export function recommendResources(rawAnswers) {
 
   // Anything typed in free text gets a best-effort keyword match.
   const freeText = [a.learning.topicsFreeText, a.financialGoals.otherSkillsText].filter(Boolean).join(', ')
-  const { items: freeItems, unmatched } = keywordMatches(freeText, exclude, budget)
+  const { items: freeItems, unmatched } = keywordMatches(freeText, exclude, budget, a.personal.country)
   if (freeItems.length) {
     sections.push({ id: 'freeText', title: 'From your other topics', intro: 'Closest matches to what you typed.', items: freeItems })
   }

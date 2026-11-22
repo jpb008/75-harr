@@ -1,6 +1,6 @@
 import { Ruler, User } from 'lucide-react'
 import { SectionCard, Field, NumberInput, Segmented, ChipGroup, OptionCards } from '../ui'
-import { SEX_OPTIONS, ACTIVITY_LEVELS } from '../../lib/plan/options'
+import { SEX_OPTIONS, ACTIVITY_LEVELS, COUNTRIES } from '../../lib/plan/options'
 import { HeightInput, WeightInput } from './MeasureInputs'
 
 export default function AboutStep({ answers, update }) {
@@ -9,7 +9,7 @@ export default function AboutStep({ answers, update }) {
 
   return (
     <div className="space-y-4">
-      <SectionCard icon={User} title="You" hint="Age and sex are used for calorie and hydration estimates — nothing else.">
+      <SectionCard icon={User} title="You" hint="Age and sex are used for calorie and hydration estimates; country for money resources.">
         <div className="grid grid-cols-2 gap-3">
           <Field label="Age">
             <NumberInput value={p.age} onChange={(age) => set({ age, isUnder18: age != null && age < 18 })} min={13} max={100} placeholder="e.g. 25" />
@@ -27,6 +27,9 @@ export default function AboutStep({ answers, update }) {
         </div>
         <Field label="Sex">
           <ChipGroup options={SEX_OPTIONS} value={p.sex} onChange={(sex) => set({ sex: sex ?? 'unspecified' })} />
+        </Field>
+        <Field label="Where do you live?" hint="So tax, savings and money resources match your country's rules.">
+          <ChipGroup options={COUNTRIES} value={p.country} onChange={(country) => set({ country })} />
         </Field>
       </SectionCard>
 

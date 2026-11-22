@@ -8,13 +8,25 @@ import { SKILLS, labelFor } from './options'
 // overpromising (no promises, no implied earnings), SBA general new-
 // business guidance, and FTC Endorsement Guides (affiliate/sponsored
 // disclosure is required regardless of audience size). The "money basics"
-// track follows CFPB/FDIC consumer education: track spending, build a
+// track follows CFPB/FDIC (U.S.) and FCAC (Canada) consumer education: track spending, build a
 // starter emergency fund, prioritize high-interest debt.
 const WEEK_MS = 7 * 24 * 60 * 60 * 1000
 
 function minutesPerDay(hoursPerWeek) {
   if (!hoursPerWeek) return 30
   return Math.max(15, Math.round(((hoursPerWeek * 60) / 7) / 15) * 15)
+}
+
+const TAX_NOTES = {
+  us: 'Set aside part of every payment for taxes — U.S. freelancers usually pay quarterly estimated taxes to the IRS.',
+  ca: 'Set aside part of every payment for taxes — in Canada, self-employment income goes on Form T2125, and you may need to pay CRA instalments and register for GST/HST once your sales pass $30,000 over four calendar quarters.',
+  other: "Set aside part of every payment for taxes, and check your country's rules for reporting self-employment income.",
+}
+
+const RETIREMENT_ACTIONS = {
+  us: 'Ask HR whether your employer offers a retirement plan (like a 401(k)) and a matching contribution.',
+  ca: 'Learn how a TFSA and RRSP differ, and ask your employer whether they offer a group RRSP match.',
+  other: "Find out which tax-advantaged retirement or savings accounts your country offers, and whether your employer matches contributions.",
 }
 
 function freelancingActions(f) {
@@ -34,7 +46,7 @@ function freelancingActions(f) {
           `Reach out to ${outreachCount} potential clients, including past ones.`,
           'Review your pricing against what you hear back.',
         ],
-    note: 'Set aside part of every payment for taxes — freelancers usually pay quarterly estimated taxes in the U.S.',
+    note: TAX_NOTES[f.country] ?? TAX_NOTES.other,
     requiresDisclosureReminder: false,
   }
 }
@@ -84,8 +96,8 @@ function investingActions(f) {
     'Learn one investing basic this week (for example: what an index fund is, or how fees affect returns).',
     'If you invest, consider a fixed amount on a regular schedule regardless of price (dollar-cost averaging) rather than trying to time the market.',
   ]
-  if (f.hasRetirementAccount !== 'yes' && ['employed', 'partTime'].includes(f.employmentStatus)) {
-    actions.push('Ask HR whether your employer offers a retirement plan and a matching contribution.')
+  if (f.hasRetirementAccount !== 'yes') {
+    actions.push(RETIREMENT_ACTIONS[f.country] ?? RETIREMENT_ACTIONS.other)
   }
   return {
     weeklyActions: actions,
@@ -141,7 +153,7 @@ function computeMilestones(f) {
 
 export function generateFinancialPlan(rawAnswers) {
   const a = normalizeAnswers(rawAnswers)
-  const f = a.financialGoals
+  const f = { ...a.financialGoals, country: a.personal.country }
   const disclaimer =
     "Projected based on your own inputs, not a promise of what you'll make. Individual results vary — nothing here is financial advice."
 

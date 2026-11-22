@@ -11,6 +11,12 @@ export const SEX_OPTIONS = [
   { id: 'unspecified', label: 'Prefer not to say' },
 ]
 
+export const COUNTRIES = [
+  { id: 'us', label: 'United States' },
+  { id: 'ca', label: 'Canada' },
+  { id: 'other', label: 'Somewhere else' },
+]
+
 export const ACTIVITY_LEVELS = [
   { id: 'sedentary', label: 'Mostly sitting', hint: 'Desk job, little walking' },
   { id: 'light', label: 'Lightly active', hint: 'Some walking, on your feet part of the day' },

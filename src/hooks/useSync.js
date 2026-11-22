@@ -26,7 +26,7 @@ const SYNCED_KEY_DEFAULTS = {
   mealChecks: {},
   dailyHealth: {},
 }
-const SYNCED_KEYS = Object.keys(SYNCED_KEY_DEFAULTS)
+export const SYNCED_KEYS = Object.keys(SYNCED_KEY_DEFAULTS)
 
 function buildLocalBlob() {
   const blob = {}

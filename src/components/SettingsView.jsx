@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Palette, Bell, Flame, UserRound } from 'lucide-react'
 import { SectionCard, Toggle } from './ui'
 import { RecoveryCodesPanel } from './RecoveryCodes'
+import { SYNCED_KEYS } from '../hooks/useSync'
 import { ChangePasswordForm, DeleteAccount } from './AccountControls'
 
 const REMINDER_OPTIONS = [
@@ -14,7 +15,8 @@ import { DEFAULT_TASKS, TASK_ICONS, TASK_COLORS } from '../lib/challenge'
 import { ACCENT_PRESETS } from '../lib/accent'
 import { BACKGROUND_PRESETS } from '../lib/background'
 
-const EXPORT_KEYS = ['challenge', 'days', 'history', 'goals', 'celebratedMilestones', 'planDays', 'workoutLogs', 'weighIns', 'incomeLogs', 'reminderPrefs', 'plan', 'planAnswers']
+// Everything that syncs to the account, plus the plan itself.
+const EXPORT_KEYS = [...SYNCED_KEYS, 'plan', 'planAnswers']
 
 function exportData() {
   const data = {}

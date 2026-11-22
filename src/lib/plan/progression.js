@@ -55,12 +55,16 @@ export function suggestNext(exercise, workoutLogs, { unit = 'lb', beforeDateStr,
   const timeWord = isHold ? 'sec' : 'reps'
 
   if (!history.length) {
+    const libEx = exerciseById(exercise.exerciseId)
+    const bodyweight = libEx ? isBodyweight(libEx) || libEx.bwLevel != null : false
     return {
       kind: 'start',
       weight: null,
       text: isHold
         ? `First time: hold ${lo}-${hi} sec with good form.`
-        : `First time: pick a weight you could do ${hi} times with 2-3 reps to spare.`,
+        : bodyweight
+          ? `First time: aim for ${lo}-${hi} clean reps per set, stopping with 1-2 left in the tank.`
+          : `First time: pick a weight you could do ${hi} times with 2-3 reps to spare.`,
       last: null,
     }
   }

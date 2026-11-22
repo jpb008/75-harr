@@ -26,3 +26,15 @@ export async function login(email, password) {
 export async function verifySession(token) {
   return apiFetch('/auth/session', { method: 'GET', token })
 }
+
+export async function recover(email, code, newPassword) {
+  return apiFetch('/auth/recover', { method: 'POST', body: { email, code, newPassword } })
+}
+
+export async function getRecoveryStatus(token) {
+  return apiFetch('/auth/recovery-codes', { method: 'GET', token })
+}
+
+export async function createRecoveryCodes(token) {
+  return apiFetch('/auth/recovery-codes', { method: 'POST', token })
+}

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import AtRiskBanner from './AtRiskBanner'
+import { RecoveryBanner } from './RecoveryCodes'
 import ProgressPhotoCard from './ProgressPhotoCard'
 import MilestoneOverlay from './MilestoneOverlay'
 import ShareCardModal from './ShareCardModal'
@@ -28,6 +29,9 @@ export default function TodayView({
   onSaveWorkoutLog,
   injuries,
   answers,
+  meals,
+  recoveryStatus,
+  onOpenRecovery,
 }) {
   const [shareOpen, setShareOpen] = useState(false)
   const percent = challenge.tasks.length
@@ -48,6 +52,8 @@ export default function TodayView({
           <Share2 size={13} /> Share
         </button>
       </div>
+
+      <RecoveryBanner status={recoveryStatus} onOpen={onOpenRecovery} />
 
       <Card className="p-5 mb-5 overflow-hidden relative">
         <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-[var(--accent-a15)] blur-2xl pointer-events-none" />
@@ -148,6 +154,7 @@ export default function TodayView({
           todayDateStr={todayDateStr}
           injuries={injuries}
           answers={answers}
+          meals={meals}
         />}
 
       {shareOpen && (

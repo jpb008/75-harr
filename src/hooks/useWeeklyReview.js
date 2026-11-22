@@ -26,7 +26,8 @@ export function useWeeklyReview(token, plan, answers, savePlan) {
 
   function prepareReview() {
     const planDays = loadJSON('planDays', {})
-    const weekSnapshot = computeWeekSnapshot(planDays, previousWeekStart)
+    const mealsPerDay = answers?.personal?.mealsPerDay ?? null
+    const weekSnapshot = computeWeekSnapshot(planDays, previousWeekStart, { mealChecks: loadJSON('mealChecks', {}), mealsPerDay })
     setSnapshot(weekSnapshot)
     const proposals = proposeAdjustments(weekSnapshot)
     const calories = answers ? calorieSuggestion(loadJSON('weighIns', {}), answers, today()) : null

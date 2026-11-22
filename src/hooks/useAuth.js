@@ -73,6 +73,21 @@ export function useAuth() {
     }
   }
 
+  async function recover(email, code, newPassword) {
+    setError(null)
+    try {
+      const { token, userId } = await authApi.recover(email, code, newPassword)
+      const next = { token, userId, email }
+      authApi.setStoredSession(next)
+      setSession(next)
+      setStatus('authenticated')
+      return next
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Something went wrong.')
+      throw err
+    }
+  }
+
   function logout() {
     authApi.clearStoredSession()
     setSession(null)
@@ -87,6 +102,7 @@ export function useAuth() {
     error,
     signup,
     login,
+    recover,
     logout,
   }
 }

@@ -1,5 +1,5 @@
 import { CORS_HEADERS, error } from './lib/response.js'
-import { handleSignup, handleLogin, handleSession } from './routes/auth.js'
+import { handleSignup, handleLogin, handleSession, handleCreateRecoveryCodes, handleRecoveryStatus, handleRecover } from './routes/auth.js'
 import { handleSubscribe, handleUnsubscribe, runScheduledPush } from './routes/push.js'
 import { handleGetState, handlePutState } from './routes/state.js'
 import { handleGetPlan, handleGetPlanHistory, handlePostPlan } from './routes/plan.js'
@@ -9,6 +9,9 @@ const ROUTES = [
   ['POST', '/auth/signup', handleSignup],
   ['POST', '/auth/login', handleLogin],
   ['GET', '/auth/session', handleSession],
+  ['GET', '/auth/recovery-codes', handleRecoveryStatus],
+  ['POST', '/auth/recovery-codes', handleCreateRecoveryCodes],
+  ['POST', '/auth/recover', handleRecover],
   ['POST', '/subscribe', handleSubscribe],
   ['POST', '/unsubscribe', handleUnsubscribe],
   ['GET', '/state', handleGetState],

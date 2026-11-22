@@ -1,9 +1,7 @@
 import { Flame, Beef, Droplets, Wheat, Scale, Clock, Leaf } from 'lucide-react'
 import { Card, SectionCard, Chip, IconBadge } from '../ui'
-import { useMemo } from 'react'
 import Disclaimer from '../Disclaimer'
 import MealPlanView from './MealPlanView'
-import { generateMealPlan } from '../../lib/plan/mealPlan'
 
 function Stat({ icon, label, value, sub }) {
   return (
@@ -31,11 +29,10 @@ function List({ items }) {
   )
 }
 
-export default function NutritionTab({ plan, answers }) {
+export default function NutritionTab({ plan, meals }) {
   const n = plan.nutrition
   const foods = n.proteinFoods ?? []
-  const trainingDays = useMemo(() => [...new Set(plan.workout.sessions.map((x) => x.dayOfWeek))], [plan])
-  const mealPlan = useMemo(() => (answers ? generateMealPlan(answers, trainingDays) : null), [answers, trainingDays])
+  const mealPlan = meals?.mealPlan
 
   return (
     <div className="space-y-4">
@@ -83,7 +80,7 @@ export default function NutritionTab({ plan, answers }) {
         </>
       )}
 
-      {mealPlan && <MealPlanView mealPlan={mealPlan} />}
+      {mealPlan && <MealPlanView mealPlan={mealPlan} meals={meals} />}
 
       {foods.length > 0 && (
         <SectionCard icon={Beef} title="Protein foods that fit your diet">

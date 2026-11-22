@@ -22,6 +22,8 @@ const SYNCED_KEY_DEFAULTS = {
   weighIns: {},
   incomeLogs: {},
   reminderPrefs: {},
+  mealSwaps: {},
+  mealChecks: {},
 }
 const SYNCED_KEYS = Object.keys(SYNCED_KEY_DEFAULTS)
 
@@ -46,7 +48,7 @@ function applyBlobToLocal(blob) {
 // Everything that belongs to the signed-in account. Cleared on logout so
 // the next person to sign in on this device never inherits (or uploads)
 // someone else's data.
-const ACCOUNT_LOCAL_KEYS = [...SYNCED_KEYS, 'plan', 'planAnswers', 'syncVersion', 'lastReviewedWeekStart']
+const ACCOUNT_LOCAL_KEYS = [...SYNCED_KEYS, 'plan', 'planAnswers', 'syncVersion', 'lastReviewedWeekStart', 'recoveryStatus']
 
 export function clearAccountLocalData() {
   for (const key of ACCOUNT_LOCAL_KEYS) localStorage.removeItem(`75hard:${key}`)

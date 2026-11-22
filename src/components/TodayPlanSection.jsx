@@ -1,6 +1,6 @@
 import { Dumbbell, HeartPulse, BedDouble, Brain, Wallet, Apple, ChevronRight, Check, Quote, Footprints, NotebookPen, Zap, ShieldCheck } from 'lucide-react'
-import { useMemo, useState } from 'react'
-import { generateMealPlan } from '../lib/plan/mealPlan'
+import { useState } from 'react'
+import { mealCheckKey } from '../hooks/useMeals'
 import Disclaimer from './Disclaimer'
 import WorkoutLogger from './WorkoutLogger'
 import { Card, IconBadge } from './ui'
@@ -40,14 +40,12 @@ function formatReps(ex) {
   return ex.unit === 'seconds' ? `${ex.sets}×${range}s` : ex.unit === 'perSide' ? `${ex.sets}×${range}/side` : `${ex.sets}×${range}`
 }
 
-export default function TodayPlanSection({ plan, planDayApi, onOpenPlan, motivationWhy, workoutLogs = {}, weightUnit = 'lb', onSaveWorkoutLog, todayDateStr, injuries = [], answers }) {
+export default function TodayPlanSection({ plan, planDayApi, onOpenPlan, motivationWhy, workoutLogs = {}, weightUnit = 'lb', onSaveWorkoutLog, todayDateStr, injuries = [], meals }) {
   const [loggerOpen, setLoggerOpen] = useState(false)
-  const todaysMeals = useMemo(() => {
-    if (!answers || !plan) return null
-    const trainingDays = [...new Set(plan.workout.sessions.map((s) => s.dayOfWeek))]
-    const mealPlan = generateMealPlan(answers, trainingDays)
-    return { showNumbers: mealPlan.showNumbers, day: mealPlan.days.find((d) => d.dayOfWeek === new Date().getDay()) }
-  }, [answers, plan])
+  const mealPlan = meals?.mealPlan
+  const todaysMeals = mealPlan ? { showNumbers: mealPlan.showNumbers, day: mealPlan.days.find((d) => d.dayOfWeek === new Date().getDay()) } : null
+  const eaten = new Set(meals?.checks?.[todayDateStr] ?? [])
+  const eatenCount = todaysMeals?.day ? todaysMeals.day.meals.filter((m) => eaten.has(mealCheckKey(m))).length : 0
   if (!plan) return null
   const { todayRecord, todaysSession, toggleMentalDev, toggleFinancial, isFinancialDone, setWorkoutDone } = planDayApi
   const todayDow = new Date().getDay()
@@ -240,17 +238,31 @@ export default function TodayPlanSection({ plan, planDayApi, onOpenPlan, motivat
             }
           />
           {todaysMeals?.day && (
-            <ul className="divide-y divide-[var(--ink-800)] mb-3">
-              {todaysMeals.day.meals.map((meal, i) => (
-                <li key={i} className="flex items-center justify-between gap-3 py-2">
-                  <span className="min-w-0">
-                    <span className="block text-[11px] uppercase tracking-wide text-[var(--ink-400)]">{meal.slotLabel}</span>
-                    <span className="block text-sm text-[var(--ink-100)] truncate">{meal.name}</span>
-                  </span>
-                  {todaysMeals.showNumbers && <span className="text-xs text-[var(--ink-300)] tabular-nums shrink-0">{meal.kcal} kcal</span>}
-                </li>
-              ))}
-            </ul>
+            <div className="mb-3">
+              <p className="text-xs text-[var(--ink-300)] px-1 mb-1">
+                {eatenCount === todaysMeals.day.meals.length ? 'All meals eaten today. Nice.' : `${eatenCount} of ${todaysMeals.day.meals.length} eaten · tick each meal as you have it`}
+              </p>
+              <div className="space-y-0.5">
+                {todaysMeals.day.meals.map((meal) => {
+                  const key = mealCheckKey(meal)
+                  return (
+                    <CheckRow
+                      key={key}
+                      checked={eaten.has(key)}
+                      onChange={() => meals.toggleCheck(todayDateStr, key)}
+                      extra={
+                        <span className="block text-xs text-[var(--ink-400)] no-underline">
+                          {meal.slotLabel}
+                          {todaysMeals.showNumbers ? ` · ${meal.kcal} kcal · ${meal.p} g protein` : ''}
+                        </span>
+                      }
+                    >
+                      {meal.name}
+                    </CheckRow>
+                  )
+                })}
+              </div>
+            </div>
           )}
           {plan.nutrition.safeMode ? (
             <ul className="text-sm text-[var(--ink-200)] space-y-1.5 list-disc pl-4">

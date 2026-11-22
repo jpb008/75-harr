@@ -20,6 +20,8 @@ import TodayView from './components/TodayView'
 import GoalsView from './components/GoalsView'
 import ProgressView from './components/ProgressView'
 import SettingsView from './components/SettingsView'
+import { useRecoveryStatus } from './components/RecoveryCodes'
+import { useMeals } from './hooks/useMeals'
 import StartScreen from './components/StartScreen'
 import AuthScreen from './components/AuthScreen'
 import OnboardingFlow from './components/onboarding/OnboardingFlow'
@@ -41,7 +43,7 @@ export default function App() {
   }
 
   if (auth.status === 'anonymous') {
-    return <AuthScreen onSignup={handleSignup} onLogin={auth.login} error={auth.error} />
+    return <AuthScreen onSignup={handleSignup} onLogin={auth.login} onRecover={auth.recover} error={auth.error} />
   }
 
   async function handleLogout() {
@@ -90,6 +92,8 @@ function AuthenticatedApp({ token, email, onLogout }) {
   const [weighIns, setWeighIns] = useStoredState('weighIns', {})
   const [incomeLogs, setIncomeLogs] = useStoredState('incomeLogs', {})
   const [reminderPrefs, setReminderPrefs] = useStoredState('reminderPrefs', {})
+  const [recoveryStatus, setRecoveryStatus] = useRecoveryStatus(token)
+  const meals = useMeals(plan.plan, plan.answers)
   const weightUnit = plan.answers?.personal?.units === 'metric' ? 'kg' : 'lb'
   const [tab, setTab] = useState('today')
   const [planSection, setPlanSection] = useState('workouts')
@@ -159,6 +163,13 @@ function AuthenticatedApp({ token, email, onLogout }) {
           }}
           motivationWhy={plan.answers?.fitnessGoals?.motivationWhy || null}
           answers={plan.answers}
+          meals={meals}
+          todayDateStr={todayDateStr}
+          recoveryStatus={recoveryStatus}
+          onOpenRecovery={() => {
+            setTab('settings')
+            setTimeout(() => document.getElementById('account')?.scrollIntoView({ block: 'start' }), 50)
+          }}
           workoutLogs={workoutLogs}
           weightUnit={weightUnit}
           injuries={plan.answers ? normalizeAnswers(plan.answers).training.injuries : []}
@@ -183,12 +194,15 @@ function AuthenticatedApp({ token, email, onLogout }) {
           setWeighIns={setWeighIns}
           answers={plan.answers ? normalizeAnswers(plan.answers) : null}
           weightUnit={weightUnit}
+          plan={plan.plan}
+          workoutLogs={workoutLogs}
+          mealChecks={meals.checks}
           onApplyCalorieAdjustment={(delta) =>
             plan.savePlan(applyCalorieAdjustment(plan.answers, delta, todayDateStr), { source: 'calorie_adjustment' })
           }
         />
       )}
-      {tab === 'plan' && <PlanView key={planSection} initialSection={planSection} plan={plan} workoutLogs={workoutLogs} weightUnit={weightUnit} incomeLogs={incomeLogs} setIncomeLogs={setIncomeLogs} />}
+      {tab === 'plan' && <PlanView key={planSection} initialSection={planSection} plan={plan} meals={meals} workoutLogs={workoutLogs} weightUnit={weightUnit} incomeLogs={incomeLogs} setIncomeLogs={setIncomeLogs} />}
       {tab === 'settings' && (
         <SettingsView
           challenge={challenge}
@@ -205,6 +219,9 @@ function AuthenticatedApp({ token, email, onLogout }) {
           onLogout={onLogout}
           reminderPrefs={reminderPrefs}
           setReminderPrefs={setReminderPrefs}
+          token={token}
+          recoveryStatus={recoveryStatus}
+          setRecoveryStatus={setRecoveryStatus}
         />
       )}
       <NavTabs

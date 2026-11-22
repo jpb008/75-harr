@@ -480,7 +480,8 @@ function dislikedIngredientIds(p) {
 
 // ── Main entry ─────────────────────────────────────────────────────────
 
-export function generateMealPlan(rawAnswers, trainingDays = []) {
+// swaps: { "<dayOfWeek>-<slotIndex>": mealId } chosen with the Swap button.
+export function generateMealPlan(rawAnswers, trainingDays = [], swaps = {}) {
   const a = normalizeAnswers(rawAnswers)
   const p = a.personal
   const nutrition = generateNutritionGuidance(a)
@@ -531,13 +532,23 @@ export function generateMealPlan(rawAnswers, trainingDays = []) {
     const meals = []
     slots.forEach((slot, i) => {
       const list = ranked[slotType(slot)].list
-      const meal = pickMeal(list, { day, slot, ctx, usedToday, history })
-      if (!meal) return
+      const picked = pickMeal(list, { day, slot, ctx, usedToday, history })
+      if (!picked) return
+      // A swap only applies while that meal still fits the user's answers.
+      const swapId = swaps?.[`${dayOfWeek}-${i}`]
+      const swappedTo = swapId && swapId !== picked.id ? list.find((m) => m.id === swapId) : null
+      const meal = swappedTo ?? picked
       usedToday.add(meal.id)
       history.push(meal.id)
       const target = kcalTarget ? (kcalTarget * SLOT_WEIGHTS[slot]) / weightSum : null
       const factor = showNumbers ? scaleFactor(meal, target) : 1
-      meals.push(mealEntry(meal, slot, factor, ctx, { postWorkout: slot === postSlot && slots.indexOf(slot) === i }))
+      meals.push(
+        mealEntry(meal, slot, factor, ctx, {
+          postWorkout: slot === postSlot && slots.indexOf(slot) === i,
+          slotIndex: i,
+          swapped: Boolean(swappedTo),
+        }),
+      )
     })
 
     // Protein top-up: if the day is short of the low end of the target,
@@ -547,9 +558,10 @@ export function generateMealPlan(rawAnswers, trainingDays = []) {
       let totals = sumTotals(meals)
       const best = proteinSnacks[0].meal
       if (totals.p < proteinRange[0] * 0.95) {
-        const snackIndex = meals.findIndex((m) => m.slot === 'snack' && m.id !== best.id)
+        // Never override a snack the user picked with Swap.
+        const snackIndex = meals.findIndex((m) => m.slot === 'snack' && m.id !== best.id && !m.swapped)
         if (snackIndex >= 0) {
-          meals[snackIndex] = mealEntry(best, 'snack', 1, ctx, { swappedForProtein: true })
+          meals[snackIndex] = mealEntry(best, 'snack', 1, ctx, { swappedForProtein: true, slotIndex: meals[snackIndex].slotIndex })
           totals = sumTotals(meals)
         }
       }
@@ -605,9 +617,29 @@ export function generateMealPlan(rawAnswers, trainingDays = []) {
     targets: showNumbers ? { kcal: kcalTarget, protein: proteinRange } : null,
     slots,
     days,
+    // Ranked meal ids per slot type, for the Swap button.
+    alternatives: {
+      breakfast: ranked.breakfast.list.map((m) => m.id),
+      main: ranked.main.list.map((m) => m.id),
+      snack: ranked.snack.list.map((m) => m.id),
+    },
     groceryList,
     prepTips,
     notes,
     disclaimer: 'Calories and protein are estimates from USDA nutrition data; brands and cooking change the real numbers. Not medical or dietary advice.',
   }
+}
+
+// The meal the Swap button moves to next: the next-best fit for that slot
+// that isn't already on the same day.
+export function nextSwapId(mealPlan, dayOfWeek, slotIndex) {
+  const day = mealPlan.days.find((d) => d.dayOfWeek === dayOfWeek)
+  const meal = day?.meals.find((m) => m.slotIndex === slotIndex && !m.addOn)
+  if (!meal) return null
+  const list = mealPlan.alternatives[slotType(meal.slot)] ?? []
+  const usedElsewhere = new Set(day.meals.filter((m) => m !== meal).map((m) => m.id))
+  const options = list.filter((id) => !usedElsewhere.has(id))
+  if (options.length < 2) return null
+  const at = options.indexOf(meal.id)
+  return options[(at + 1) % options.length]
 }

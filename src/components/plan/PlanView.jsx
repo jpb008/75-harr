@@ -21,7 +21,7 @@ const SECTIONS = [
 
 const TIER_LABELS = { beginner: 'Beginner', intermediate: 'Intermediate', advanced: 'Advanced' }
 
-export default function PlanView({ plan: planApi, initialSection = 'workouts', workoutLogs = {}, weightUnit = 'lb', incomeLogs, setIncomeLogs }) {
+export default function PlanView({ plan: planApi, meals, initialSection = 'workouts', workoutLogs = {}, weightUnit = 'lb', incomeLogs, setIncomeLogs }) {
   const [section, setSection] = useState(initialSection)
   const [editing, setEditing] = useState(false)
   const { plan, answers } = planApi
@@ -107,7 +107,7 @@ export default function PlanView({ plan: planApi, initialSection = 'workouts', w
 
       <div key={section} className="animate-fade-in">
         {section === 'workouts' && <WorkoutTab plan={plan} answers={normalized} workoutLogs={workoutLogs} weightUnit={weightUnit} />}
-        {section === 'nutrition' && <NutritionTab plan={plan} answers={normalized} />}
+        {section === 'nutrition' && <NutritionTab plan={plan} meals={meals} />}
         {section === 'mind' && <MindTab plan={plan} />}
         {section === 'money' && <MoneyTab plan={plan} incomeLogs={incomeLogs} setIncomeLogs={setIncomeLogs} />}
         {section === 'learn' && <LearnTab answers={normalized} />}

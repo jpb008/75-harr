@@ -32,6 +32,16 @@ function adjustAnswersForMentalDev(answers, action) {
   return answers
 }
 
+// Quicker meals first; if already quick, repeat a few favourites.
+function adjustAnswersForMeals(answers) {
+  const p = answers.personal
+  if (p.cookingTime !== 'minimal') {
+    return { ...answers, personal: { ...p, cookingTime: p.cookingTime === 'lots' ? 'some' : 'minimal' } }
+  }
+  if (p.mealVariety !== 'same') return { ...answers, personal: { ...p, mealVariety: 'same' } }
+  return answers
+}
+
 // approvedAdjustments: the subset of proposeAdjustments()'s output the
 // user explicitly checked off — never applied automatically.
 export function applyAdjustments(rawAnswers, approvedAdjustments) {
@@ -39,6 +49,7 @@ export function applyAdjustments(rawAnswers, approvedAdjustments) {
   for (const adjustment of approvedAdjustments) {
     if (adjustment.category === 'workout') nextAnswers = adjustAnswersForWorkout(nextAnswers, adjustment.action)
     else if (adjustment.category === 'mentalDev') nextAnswers = adjustAnswersForMentalDev(nextAnswers, adjustment.action)
+    else if (adjustment.category === 'meals') nextAnswers = adjustAnswersForMeals(nextAnswers)
     else if (adjustment.category === 'nutrition' && adjustment.delta) nextAnswers = applyCalorieAdjustment(nextAnswers, adjustment.delta, today())
   }
   return { answers: nextAnswers, plan: generatePlan(nextAnswers) }

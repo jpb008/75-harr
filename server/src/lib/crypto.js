@@ -91,3 +91,26 @@ export async function verifyToken(token, secret) {
     return null
   }
 }
+
+// Recovery codes: 12 characters from an unambiguous 32-letter alphabet
+// (60 bits), shown as XXXX-XXXX-XXXX. They're random enough that a fast
+// SHA-256 hash is safe to store (unlike passwords, they can't be guessed
+// from a dictionary).
+const RECOVERY_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+
+export function generateRecoveryCode() {
+  const bytes = crypto.getRandomValues(new Uint8Array(12))
+  const chars = Array.from(bytes, (b) => RECOVERY_ALPHABET[b % 32]).join('')
+  return `${chars.slice(0, 4)}-${chars.slice(4, 8)}-${chars.slice(8)}`
+}
+
+export function normalizeRecoveryCode(code) {
+  return String(code ?? '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+}
+
+export async function hashRecoveryCode(code) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(normalizeRecoveryCode(code)))
+  return bytesToBase64Url(new Uint8Array(digest))
+}

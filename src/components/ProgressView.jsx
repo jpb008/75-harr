@@ -5,8 +5,9 @@ import StatsSection from './StatsSection'
 import HeatmapView from './HeatmapView'
 import PhotoTimeline from './PhotoTimeline'
 import BodyWeightCard from './BodyWeightCard'
+import TrendCharts from './TrendCharts'
 
-export default function ProgressView({ challenge, days, history, photoUrls, weighIns, setWeighIns, answers, weightUnit, onApplyCalorieAdjustment }) {
+export default function ProgressView({ challenge, days, history, photoUrls, weighIns, setWeighIns, answers, weightUnit, onApplyCalorieAdjustment, plan, workoutLogs, mealChecks }) {
   const todayStr = today()
   const cells = Array.from({ length: challenge.lengthDays }, (_, i) => {
     const dateStr = addDays(challenge.startDate, i)
@@ -45,6 +46,12 @@ export default function ProgressView({ challenge, days, history, photoUrls, weig
             todayStr={todayStr}
             onApplyAdjustment={onApplyCalorieAdjustment}
           />
+        </div>
+      )}
+
+      {plan && (
+        <div className="mb-8">
+          <TrendCharts plan={plan} workoutLogs={workoutLogs} weighIns={weighIns} mealChecks={mealChecks} answers={answers} weightUnit={weightUnit} todayStr={todayStr} />
         </div>
       )}
 

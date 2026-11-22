@@ -1,6 +1,6 @@
 import { useState } from 'react'
-import { UtensilsCrossed, ShoppingCart, ChefHat, Info, Dumbbell } from 'lucide-react'
-import { SectionCard, Disclosure, Pill, IconBadge } from '../ui'
+import { UtensilsCrossed, ShoppingCart, ChefHat, Info, Dumbbell, Shuffle, Undo2 } from 'lucide-react'
+import { SectionCard, Disclosure, Pill, IconBadge, Button } from '../ui'
 
 const DAY_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 
@@ -28,14 +28,24 @@ function servingsText(servings) {
   return servings === 1 ? '1 serving' : `${servings} servings`
 }
 
-export function MealCard({ meal, showNumbers }) {
+export function MealCard({ meal, showNumbers, onSwap, onUndoSwap }) {
   const subtitle = showNumbers ? `${servingsText(meal.servings)} · ${meal.kcal} kcal · ${meal.p} g protein` : meal.slotLabel
   return (
     <Disclosure
       left={<span className="w-16 shrink-0 text-[11px] font-semibold uppercase tracking-wide text-[var(--ink-300)]">{meal.slotLabel}</span>}
       title={meal.name}
       subtitle={subtitle}
-      right={meal.postWorkout ? <Pill tone="accent"><Dumbbell size={11} /> Post-workout</Pill> : null}
+      right={
+        meal.postWorkout ? (
+          <Pill tone="accent">
+            <Dumbbell size={11} /> Post-workout
+          </Pill>
+        ) : meal.swapped ? (
+          <Pill>
+            <Shuffle size={11} /> Swapped
+          </Pill>
+        ) : null
+      }
     >
       <div className="space-y-3 pt-1">
         <div>
@@ -66,12 +76,26 @@ export function MealCard({ meal, showNumbers }) {
             {meal.addOn ? ' · added to reach your protein target' : meal.swappedForProtein ? ' · picked to reach your protein target' : ''}
           </p>
         )}
+        {(onSwap || (meal.swapped && onUndoSwap)) && (
+          <div className="flex gap-2 pt-1">
+            {onSwap && (
+              <Button variant="secondary" className="flex-1" onClick={onSwap}>
+                <Shuffle size={15} /> Swap meal
+              </Button>
+            )}
+            {meal.swapped && onUndoSwap && (
+              <Button variant="secondary" className="flex-1" onClick={onUndoSwap}>
+                <Undo2 size={15} /> Original
+              </Button>
+            )}
+          </div>
+        )}
       </div>
     </Disclosure>
   )
 }
 
-export default function MealPlanView({ mealPlan }) {
+export default function MealPlanView({ mealPlan, meals }) {
   const todayDow = new Date().getDay()
   const [selected, setSelected] = useState(todayDow)
   const day = mealPlan.days.find((d) => d.dayOfWeek === selected) ?? mealPlan.days[0]
@@ -84,8 +108,8 @@ export default function MealPlanView({ mealPlan }) {
         title="Your meal plan"
         hint={
           showNumbers && targets?.kcal
-            ? `Built around ${targets.kcal} kcal and ${targets.protein[0]}-${targets.protein[1]} g of protein a day. Tap a meal for ingredients and steps.`
-            : 'Balanced meals built around your food answers. Tap a meal for ingredients and steps.'
+            ? `Built around ${targets.kcal} kcal and ${targets.protein[0]}-${targets.protein[1]} g of protein a day. Tap a meal for ingredients, steps, or to swap it.`
+            : 'Balanced meals built around your food answers. Tap a meal for ingredients, steps, or to swap it.'
         }
       >
         <div className="grid grid-cols-7 gap-1">
@@ -118,7 +142,13 @@ export default function MealPlanView({ mealPlan }) {
 
         <div className="space-y-2">
           {day.meals.map((meal, i) => (
-            <MealCard key={`${day.dayOfWeek}-${i}`} meal={meal} showNumbers={showNumbers} />
+            <MealCard
+              key={`${day.dayOfWeek}-${i}`}
+              meal={meal}
+              showNumbers={showNumbers}
+              onSwap={meals && !meal.addOn && meals.canSwap(day.dayOfWeek, meal.slotIndex) ? () => meals.swap(day.dayOfWeek, meal.slotIndex) : null}
+              onUndoSwap={meals && meal.swapped ? () => meals.resetSwap(day.dayOfWeek, meal.slotIndex) : null}
+            />
           ))}
         </div>
       </SectionCard>

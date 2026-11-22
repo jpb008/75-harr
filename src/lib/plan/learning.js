@@ -206,7 +206,7 @@ export function recommendResources(rawAnswers) {
     if (a.financialGoals.hasHighInterestDebt === 'yes') moneyTags.push('debt')
     if (!a.financialGoals.hasEmergencyFund) moneyTags.push('emergencyFund')
     if (a.financialGoals.interests.includes('skillBuilding')) moneyTags.push('careerGrowth')
-    if (a.financialGoals.interests.includes('freelancing')) moneyTags.push('sales')
+    if (a.financialGoals.interests.some((i) => ['freelancing', 'agency'].includes(i))) moneyTags.push('sales')
     if (moneyTags.length) {
       sections.push({
         id: 'money',

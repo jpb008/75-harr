@@ -118,6 +118,67 @@ function fundamentalsActions(f) {
   return actions
 }
 
+// The cautions on these four come from the most common ways these models
+// break platform rules or consumer-protection law: unreviewed expert
+// claims in info products, view manipulation and undisclosed paid
+// promotion in clipping, and misleading cold outreach in agency work.
+function digitalProductActions(f) {
+  const starting = f.pathExperience === 'none'
+  return {
+    weeklyActions: starting
+      ? [
+          'Find one specific problem people keep asking about in a niche you understand (forums, comments, Google Trends).',
+          'Outline or build one small product that solves just that problem.',
+          'List it, or improve the listing: a clear title, who it is for, and what it does.',
+        ]
+      : [
+          'Ask buyers or readers what they got stuck on, and improve the product.',
+          'Reach out to a few creators in the niche about a revenue-share partnership.',
+          'Test one change to your listing page or price.',
+        ],
+    note: "Don't present medical, legal or financial guidance as expert-reviewed unless it is. Label it as educational, and honor refund requests promptly.",
+    requiresDisclosureReminder: false,
+  }
+}
+
+function clippingActions(f) {
+  const perWeek = Math.max(5, Math.round((f.hoursPerWeekAvailable ?? 5) * 2))
+  return {
+    weeklyActions: [
+      "Read the campaign brief and rules before clipping — what's allowed, minimum views, and payout terms.",
+      `Post about ${perWeek} clips this week on accounts dedicated to the campaign.`,
+      'Review which clips got views and why (hook, caption, length), and do more of that.',
+    ],
+    note: 'Never buy views, use bots, or use a VPN to change your payout country — campaigns and platforms ban accounts for it. Paid promotion of a creator usually needs a clear #ad or paid-partnership label.',
+    requiresDisclosureReminder: true,
+  }
+}
+
+function agencyActions(f) {
+  const pitches = Math.max(3, Math.round((f.hoursPerWeekAvailable ?? 5) / 2))
+  return {
+    weeklyActions: [
+      'Pick one service (websites, ads, or automation) and one type of local business to focus on.',
+      `Build a quick sample for a real business, then send ${pitches} personalized, honest pitches.`,
+      'Follow up once with everyone who has not replied after a few days.',
+    ],
+    note: "Be accurate in outreach — don't claim results you can't show — and put the scope and price in writing before starting paid work.",
+    requiresDisclosureReminder: false,
+  }
+}
+
+function aiAppActions() {
+  return {
+    weeklyActions: [
+      'Talk to 3 people who have the problem your app would solve, before building more.',
+      'Build or improve the smallest version that solves it.',
+      'Get one real person to use it this week and watch where they get stuck.',
+    ],
+    note: 'Most small apps take months to find paying users. Validate demand first, and handle user data and payments with established tools.',
+    requiresDisclosureReminder: false,
+  }
+}
+
 const PATH_BUILDERS = {
   freelancing: freelancingActions,
   ecommerce: ecommerceActions,
@@ -125,6 +186,10 @@ const PATH_BUILDERS = {
   affiliateMarketing: contentAffiliateActions,
   skillBuilding: skillBuildingActions,
   investing: investingActions,
+  digitalProducts: digitalProductActions,
+  clipping: clippingActions,
+  agency: agencyActions,
+  aiApps: aiAppActions,
 }
 
 function computeMilestones(f) {

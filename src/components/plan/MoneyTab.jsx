@@ -1,4 +1,4 @@
-import { Flag, Briefcase, ShoppingBag, Clapperboard, LineChart, GraduationCap, PiggyBank, Megaphone } from 'lucide-react'
+import { Flag, Briefcase, ShoppingBag, Clapperboard, LineChart, GraduationCap, PiggyBank, Megaphone, FileText, Scissors, Store, AppWindow } from 'lucide-react'
 import { SectionCard, Card } from '../ui'
 import Disclaimer from '../Disclaimer'
 
@@ -10,6 +10,10 @@ const PATH_META = {
   investing: { title: 'Investing', icon: LineChart },
   skillBuilding: { title: 'Skill building', icon: GraduationCap },
   fundamentals: { title: 'Money basics', icon: PiggyBank },
+  digitalProducts: { title: 'Digital products', icon: FileText },
+  clipping: { title: 'Clipping', icon: Scissors },
+  agency: { title: 'Local business services', icon: Store },
+  aiApps: { title: 'Apps built with AI', icon: AppWindow },
 }
 
 const money = (n) => `$${Number(n).toLocaleString()}`

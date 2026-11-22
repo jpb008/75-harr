@@ -58,6 +58,8 @@ function adaptIngredient(id, grams, meal, ctx) {
   if (ctx.nutAllergy && tags.includes('nut')) {
     return id === 'peanutButter' ? ['sunflowerButter', grams] : ['pumpkinSeeds', grams]
   }
+  // Someone who won't eat cheese doesn't want cottage cheese either.
+  if (id === 'cottageCheese' && ctx.dislikes.has('cheese')) return 'EXCLUDE'
   if (ing.group && ctx.dislikes.has(ing.group)) {
     // A small topping can just be left off; a main ingredient rules the meal out.
     if (ing.group === 'cheese' || grams <= 30) return 'REMOVE'
@@ -67,9 +69,71 @@ function adaptIngredient(id, grams, meal, ctx) {
   return null
 }
 
+// How each ingredient is written in meal names and recipe steps, so a
+// removed or swapped ingredient never lingers in the text.
+const TEXT_WORDS = {
+  peanutButter: ['peanut butter'],
+  sunflowerButter: ['sunflower seed butter'],
+  almonds: ['almonds'],
+  pumpkinSeeds: ['pumpkin seeds'],
+  // A quesadilla without cheese isn't one, so that meal is dropped instead.
+  cheddar: ['cheese', 'quesadilla'],
+  mozzarella: ['mozzarella', 'cheese', 'quesadilla'],
+  feta: ['feta', 'cheese'],
+  milk: ['milk'],
+  soyMilk: ['soy milk'],
+  oatMilk: ['oat milk'],
+  greekYogurt: ['greek yogurt', 'yogurt'],
+  soyYogurt: ['soy yogurt'],
+  honey: ['honey'],
+  maple: ['maple syrup'],
+  soySauce: ['soy sauce'],
+  tamari: ['tamari'],
+  coconutAminos: ['coconut aminos'],
+  bread: ['bread'],
+  gfBread: ['gluten-free bread'],
+  wwPasta: ['pasta'],
+  gfPasta: ['gluten-free pasta'],
+  tortilla: ['tortilla'],
+  cornTortilla: ['corn tortilla'],
+}
+
+function wordsFor(id) {
+  return TEXT_WORDS[id] ?? [INGREDIENTS[id].name.toLowerCase().split(/[,(]/)[0].trim()]
+}
+
+const esc = (w) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+
+// Drop a removed ingredient from a recipe step ("eggs, beans, cheese and
+// salsa" -> "eggs, beans and salsa").
+function stripWord(text, word) {
+  const w = `${esc(word)}s?`
+  return text
+    .replace(new RegExp(`, ${w} and `, 'gi'), ' and ')
+    .replace(new RegExp(`, add ${w},`, 'gi'), ',')
+    .replace(new RegExp(`, ${w},`, 'gi'), ',')
+    .replace(new RegExp(`\\b${w}, `, 'gi'), '')
+    .replace(new RegExp(` and ${w}\\b`, 'gi'), '')
+    .replace(new RegExp(`\\b${w} and `, 'gi'), '')
+}
+
+function mentions(text, word) {
+  return new RegExp(`\\b${esc(word)}`, 'i').test(text)
+}
+
+function replaceWord(text, from, to) {
+  if (text.toLowerCase().includes(to)) return text
+  return text.replace(new RegExp(`\\b${esc(from)}(s?)\\b`, 'gi'), (match, plural) => {
+    const out = to + plural
+    return match[0] === match[0].toUpperCase() ? out.charAt(0).toUpperCase() + out.slice(1) : out
+  })
+}
+
 function adaptMeal(meal, ctx) {
   if (meal.shake && !ctx.shakes) return null
   let ingredients = meal.ingredients
+  let name = meal.name
+  let steps = meal.steps
   // A swap can introduce a new conflict (e.g. soy milk for someone soy-free),
   // so re-check until nothing changes.
   for (let pass = 0; pass < 3; pass += 1) {
@@ -80,17 +144,29 @@ function adaptMeal(meal, ctx) {
       if (result === 'EXCLUDE') return null
       if (result === 'REMOVE') {
         changed = true
+        // A meal named after the food (e.g. "Apple with peanut butter")
+        // is ruled out rather than served without it.
+        if (wordsFor(id).some((w) => mentions(name, w))) return null
+        for (const w of wordsFor(id)) steps = steps.map((step) => stripWord(step, w))
+        if (wordsFor(id).some((w) => steps.some((step) => mentions(step, w)))) return null
         continue
       }
       if (result) {
         changed = true
+        const [toId] = result
+        const from = wordsFor(id)[0]
+        const to = wordsFor(toId)[0]
+        if (from !== to) {
+          name = replaceWord(name, from, to)
+          steps = steps.map((step) => replaceWord(step, from, to))
+        }
         next.push(result)
       } else next.push([id, grams])
     }
     ingredients = next
     if (!changed) break
   }
-  return { ...meal, ingredients }
+  return { ...meal, name, steps, ingredients }
 }
 
 function nutritionOf(ingredients, factor = 1) {

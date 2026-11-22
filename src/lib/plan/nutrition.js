@@ -123,9 +123,34 @@ function weightTimeline(a, weightKg) {
   return null
 }
 
+// Foods the user said they won't eat are left off the protein list too.
+const DISLIKE_FILTERS = {
+  chicken: /chicken/i,
+  beef: /beef/i,
+  turkey: /turkey/i,
+  fish: /fish|tuna|salmon|sardine|cod/i,
+  shrimp: /shrimp|shellfish/i,
+  eggs: /\begg/i,
+  beans: /bean|lentil|chickpea/i,
+  tofu: /tofu|tempeh|seitan|edamame/i,
+  proteinPowder: /protein powder|whey/i,
+  milk: /(?<!soy |oat |almond )\bmilk/i,
+  cheese: /cheese/i,
+  yogurt: /yogurt|cottage/i,
+  peanutButter: /peanut/i,
+  nuts: /almond|\bnuts?\b/i,
+  seeds: /seed/i,
+}
+
 function proteinFoodsFor(a) {
   const base = PROTEIN_FOODS[a.personal.dietPreference] ?? PROTEIN_FOODS.none
-  return base.filter((food) => !a.personal.dietRestrictions.some((r) => RESTRICTION_FILTERS[r]?.test(food)))
+  const typed = (a.personal.foodDislikesOther ?? []).map((w) => w.toLowerCase().trim().replace(/s$/, '')).filter((w) => w.length > 2)
+  return base.filter(
+    (food) =>
+      !a.personal.dietRestrictions.some((r) => RESTRICTION_FILTERS[r]?.test(food)) &&
+      !(a.personal.foodDislikes ?? []).some((d) => DISLIKE_FILTERS[d]?.test(food)) &&
+      !typed.some((w) => food.toLowerCase().includes(w)),
+  )
 }
 
 export function generateNutritionGuidance(rawAnswers) {

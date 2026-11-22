@@ -1,4 +1,4 @@
-import { INGREDIENTS, MEALS, mealCost } from './foodLibrary'
+import { INGREDIENTS, MEALS, mealCost, FOOD_DISLIKES, FOOD_ALIASES } from './foodLibrary'
 import { normalizeAnswers } from './normalizeAnswers'
 import { generateNutritionGuidance } from './nutrition'
 import { WEEKDAY_NAMES } from './options'
@@ -30,6 +30,89 @@ function dairySwap(id, ctx) {
   return null
 }
 
+// Substitutes for a food the user won't eat. Starches are swapped at
+// matching calories; vegetables and fruit gram for gram.
+const DISLIKE_SWAPS = {
+  rice: ['quinoa', 'potato', 'sweetPotato'],
+  quinoa: ['rice', 'potato'],
+  wwPasta: ['rice', 'quinoa'],
+  gfPasta: ['rice', 'quinoa'],
+  potato: ['sweetPotato', 'rice'],
+  sweetPotato: ['potato', 'rice'],
+  riceCakes: ['bread'],
+  milk: ['soyMilk', 'oatMilk'],
+  peanutButter: ['sunflowerButter', 'almonds'],
+  broccoli: ['mixedVeg', 'spinach', 'bellPepper'],
+  spinach: ['greens', 'broccoli'],
+  greens: ['spinach', 'tomato', 'bellPepper'],
+  bellPepper: ['mixedVeg', 'broccoli'],
+  mixedVeg: ['broccoli', 'bellPepper', 'spinach'],
+  tomato: ['bellPepper', 'greens'],
+  banana: ['berries', 'apple'],
+  berries: ['banana', 'apple'],
+  apple: ['banana', 'berries'],
+  honey: ['maple'],
+  maple: ['honey'],
+}
+const STARCHES = new Set(['rice', 'quinoa', 'wwPasta', 'gfPasta', 'potato', 'sweetPotato', 'riceCakes', 'bread'])
+
+function dislikeSwap(id, grams, meal, ctx) {
+  const inMeal = new Set(meal.ingredients.map(([other]) => other))
+  for (const to of DISLIKE_SWAPS[id] ?? []) {
+    if (ctx.dislikedIds.has(to) || inMeal.has(to)) continue
+    const g = STARCHES.has(id) ? Math.round((grams * INGREDIENTS[id].kcal) / INGREDIENTS[to].kcal / 5) * 5 : grams
+    return [to, g]
+  }
+  return null
+}
+
+// Turns a typed "won't eat" entry into library ingredients, e.g.
+// "strawberries" -> berries, "seafood" -> fish + shrimp.
+function singular(word) {
+  return word.replace(/ies$/, 'y').replace(/(oes|ches|shes)$/, (m) => m.slice(0, -2)).replace(/s$/, '')
+}
+
+export function matchCustomFood(text) {
+  const raw = String(text ?? '').toLowerCase().trim().replace(/\s+/g, ' ')
+  if (!raw) return []
+  const forms = new Set([raw, singular(raw), raw.split(' ').map(singular).join(' ')])
+  const ids = new Set()
+  // Exact option or alias first, so "milk" means dairy milk, not soy milk too.
+  for (const form of forms) {
+    if (FOOD_ALIASES[form]?.length === 0) return []
+    for (const id of FOOD_ALIASES[form] ?? []) ids.add(id)
+    for (const d of FOOD_DISLIKES) {
+      const label = d.label.toLowerCase()
+      if (label === form || singular(label) === form || d.id.toLowerCase() === form) d.ingredients.forEach((x) => ids.add(x))
+    }
+  }
+  if (ids.size) return [...ids]
+  for (const form of forms) {
+    for (const [id, ing] of Object.entries(INGREDIENTS)) {
+      const name = ing.name.toLowerCase().split(/[,(]/)[0].trim()
+      const words = TEXT_WORDS[id] ?? []
+      if (name === form || singular(name) === form || words.includes(form) || words.map(singular).includes(form)) ids.add(id)
+    }
+  }
+  if (ids.size) return [...ids]
+  for (const form of forms) {
+    for (const [id, ing] of Object.entries(INGREDIENTS)) {
+      const name = ing.name.toLowerCase().split(/[,(]/)[0].trim()
+      if (name.split(/[ -]/).map(singular).includes(form)) ids.add(id)
+    }
+  }
+  return [...ids]
+}
+
+// What a typed entry will do, shown under it in the food questions.
+export function describeCustomFood(text) {
+  const ids = matchCustomFood(text)
+  if (ids.length) return { matched: true, names: ids.map((id) => INGREDIENTS[id].name.split(/[,(]/)[0].trim()) }
+  const word = String(text ?? '').toLowerCase().trim()
+  const mentioned = MEALS.filter((meal) => [meal.name, ...meal.steps].some((t) => mentions(t, word) || mentions(t, singular(word)))).length
+  return { matched: false, mentioned }
+}
+
 function adaptIngredient(id, grams, meal, ctx) {
   const ing = INGREDIENTS[id]
   const tags = ing.tags
@@ -58,12 +141,13 @@ function adaptIngredient(id, grams, meal, ctx) {
   if (ctx.nutAllergy && tags.includes('nut')) {
     return id === 'peanutButter' ? ['sunflowerButter', grams] : ['pumpkinSeeds', grams]
   }
-  // Someone who won't eat cheese doesn't want cottage cheese either.
-  if (id === 'cottageCheese' && ctx.dislikes.has('cheese')) return 'EXCLUDE'
-  if (ing.group && ctx.dislikes.has(ing.group)) {
-    // A small topping can just be left off; a main ingredient rules the meal out.
-    if (ing.group === 'cheese' || grams <= 30) return 'REMOVE'
-    if (ing.group === 'peanutButter') return ['almonds', grams]
+  if (ctx.dislikedIds.has(id)) {
+    // Close substitutes first (rice -> quinoa), so the meal survives.
+    const swap = dislikeSwap(id, grams, meal, ctx)
+    if (swap) return swap
+    // A small topping or cheese can just be left off; a main ingredient
+    // rules the meal out.
+    if (grams <= 30 || ['cheddar', 'mozzarella', 'feta', 'onion'].includes(id)) return 'REMOVE'
     return 'EXCLUDE'
   }
   return null
@@ -96,6 +180,35 @@ const TEXT_WORDS = {
   gfPasta: ['gluten-free pasta'],
   tortilla: ['tortilla'],
   cornTortilla: ['corn tortilla'],
+  rice: ['rice'],
+  quinoa: ['quinoa'],
+  potato: ['potato'],
+  sweetPotato: ['sweet potato'],
+  riceCakes: ['rice cake'],
+  broccoli: ['broccoli'],
+  spinach: ['spinach'],
+  greens: ['greens', 'salad'],
+  bellPepper: ['pepper'],
+  mixedVeg: ['vegetables', 'vegetable', 'veg'],
+  tomato: ['tomato'],
+  onion: ['onion'],
+  avocado: ['avocado'],
+  banana: ['banana'],
+  berries: ['berries', 'berry'],
+  apple: ['apple'],
+  oats: ['oats', 'oatmeal'],
+  chia: ['chia'],
+  salsa: ['salsa'],
+  hummus: ['hummus'],
+  whey: ['protein powder', 'protein'],
+  peaProtein: ['protein powder', 'protein'],
+}
+
+// Words that take a plural when they replace a plural ("potatoes").
+const COUNT_NOUNS = new Set(['potato', 'sweet potato', 'tortilla', 'corn tortilla', 'banana', 'apple', 'tomato', 'onion', 'avocado', 'rice cake', 'pepper'])
+function plural(word) {
+  if (!COUNT_NOUNS.has(word)) return word
+  return /o$/.test(word) ? `${word}es` : `${word}s`
 }
 
 function wordsFor(id) {
@@ -122,15 +235,20 @@ function mentions(text, word) {
 }
 
 function replaceWord(text, from, to) {
-  if (text.toLowerCase().includes(to)) return text
-  return text.replace(new RegExp(`\\b${esc(from)}(s?)\\b`, 'gi'), (match, plural) => {
-    const out = to + plural
+  // Lookbehind keeps "soy milk" from becoming "soy soy milk".
+  return text.replace(new RegExp(`(?<!(soy|oat|corn|sweet|gluten-free|peanut|seed|rice) )\\b${esc(from)}(es|s)?\\b`, 'gi'), (match, _prefix, suffix) => {
+    const out = suffix ? plural(to) : to
     return match[0] === match[0].toUpperCase() ? out.charAt(0).toUpperCase() + out.slice(1) : out
   })
 }
 
 function adaptMeal(meal, ctx) {
   if (meal.shake && !ctx.shakes) return null
+  // Typed foods that aren't a listed ingredient (e.g. "lemon", "garlic")
+  // still rule out any recipe that mentions them.
+  for (const word of ctx.customWords) {
+    if ([meal.name, ...meal.steps].some((t) => mentions(t, word))) return null
+  }
   let ingredients = meal.ingredients
   let name = meal.name
   let steps = meal.steps
@@ -154,9 +272,9 @@ function adaptMeal(meal, ctx) {
       if (result) {
         changed = true
         const [toId] = result
-        const from = wordsFor(id)[0]
         const to = wordsFor(toId)[0]
-        if (from !== to) {
+        for (const from of wordsFor(id)) {
+          if (from === to) continue
           name = replaceWord(name, from, to)
           steps = steps.map((step) => replaceWord(step, from, to))
         }
@@ -353,6 +471,13 @@ function postWorkoutSlot(slots, preferredTimeOfDay) {
   return 'dinner'
 }
 
+function dislikedIngredientIds(p) {
+  const ids = new Set()
+  for (const d of FOOD_DISLIKES) if (p.foodDislikes.includes(d.id)) d.ingredients.forEach((id) => ids.add(id))
+  for (const text of p.foodDislikesOther) matchCustomFood(text).forEach((id) => ids.add(id))
+  return ids
+}
+
 // ── Main entry ─────────────────────────────────────────────────────────
 
 export function generateMealPlan(rawAnswers, trainingDays = []) {
@@ -369,7 +494,8 @@ export function generateMealPlan(rawAnswers, trainingDays = []) {
     glutenFree: p.dietRestrictions.includes('glutenFree'),
     nutAllergy: p.dietRestrictions.includes('nutAllergy'),
     soyFree: p.dietRestrictions.includes('soyFree'),
-    dislikes: new Set(p.foodDislikes),
+    dislikedIds: dislikedIngredientIds(p),
+    customWords: p.foodDislikesOther.filter((w) => matchCustomFood(w).length === 0).map((w) => singular(w.toLowerCase().trim())),
     shakes: p.proteinShakes !== 'no',
     kitchen: p.kitchenAccess,
     cookingTime: p.cookingTime,
@@ -458,8 +584,9 @@ export function generateMealPlan(rawAnswers, trainingDays = []) {
   if (days.some((d) => d.meals.some((m) => ['overnight_oats', 'chia_pudding', 'eggs_toast_pb', 'boiled_eggs_fruit'].includes(m.id)))) {
     prepTips.push('Make overnight oats or chia pudding the night before, and boil a batch of eggs at the start of the week.')
   }
-  if (Object.keys(grams).some((id) => ['rice', 'quinoa'].includes(id))) {
-    prepTips.push('Cook rice or quinoa in one big batch — it reheats well for 4 days.')
+  const grains = ['rice', 'quinoa'].filter((id) => grams[id])
+  if (grains.length) {
+    prepTips.push(`Cook ${grains.join(' or ')} in one big batch — it reheats well for 4 days.`)
   }
 
   const notes = []

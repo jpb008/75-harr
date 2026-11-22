@@ -79,6 +79,10 @@ export function normalizeAnswers(raw) {
     kitchenAccess: p.kitchenAccess ?? 'full',
     groceryBudget: p.groceryBudget ?? 'moderate',
     foodDislikes: arr(p.foodDislikes),
+    foodDislikesOther: arr(p.foodDislikesOther)
+      .filter((x) => typeof x === 'string' && x.trim())
+      .map((x) => x.trim().slice(0, 40))
+      .slice(0, 25),
     cuisines: arr(p.cuisines),
     eatsBreakfast: p.eatsBreakfast ?? 'yes',
     proteinShakes: p.proteinShakes ?? 'yes',

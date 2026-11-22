@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Check, ChevronDown } from 'lucide-react'
 
 export function Card({ className = '', children, ...rest }) {
@@ -69,15 +69,24 @@ export function TextInput({ value, onChange, placeholder, multiline, rows = 3 })
   return <input value={value ?? ''} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className={inputClass} />
 }
 
-// Keeps the typed text locally so partial input like "7." isn't clobbered,
-// and reports a number (or null when empty) upward.
+function sameNumber(a, b) {
+  if (a == null || b == null) return a == b
+  return Math.abs(a - b) < 0.051
+}
+
+// The typed text is the source of truth while the user types. A new
+// `value` from the parent only replaces it when it genuinely differs from
+// what this input last reported (e.g. switching units) — never because a
+// unit conversion rounded the user's own number on the way back.
 export function NumberInput({ value, onChange, min, max, step = 1, suffix, placeholder }) {
   const [text, setText] = useState(value == null ? '' : String(value))
-  const [lastValue, setLastValue] = useState(value)
-  if (value !== lastValue) {
-    setLastValue(value)
-    if (value !== (text === '' ? null : Number(text))) setText(value == null ? '' : String(value))
-  }
+  const lastEmitted = useRef(value)
+  useEffect(() => {
+    if (!sameNumber(value, lastEmitted.current)) {
+      lastEmitted.current = value
+      setText(value == null ? '' : String(value))
+    }
+  }, [value])
   return (
     <div className="relative">
       <input
@@ -92,7 +101,7 @@ export function NumberInput({ value, onChange, min, max, step = 1, suffix, place
           setText(e.target.value)
           const n = e.target.value === '' ? null : Number(e.target.value)
           const next = n == null || Number.isNaN(n) ? null : n
-          setLastValue(next)
+          lastEmitted.current = next
           onChange(next)
         }}
         className={`${inputClass} ${suffix ? 'pr-12' : ''}`}

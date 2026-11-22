@@ -27,19 +27,40 @@ function buildLocalBlob() {
   return blob
 }
 
+// Returns true if anything local actually changed, so the app only
+// re-reads state when it has to.
 function applyBlobToLocal(blob) {
+  let changed = false
   for (const key of SYNCED_KEYS) {
-    if (blob[key] !== undefined) saveJSON(key, blob[key])
+    if (blob[key] === undefined) continue
+    if (JSON.stringify(loadJSON(key, SYNCED_KEY_DEFAULTS[key])) !== JSON.stringify(blob[key])) changed = true
+    saveJSON(key, blob[key])
   }
+  return changed
+}
+
+// Everything that belongs to the signed-in account. Cleared on logout so
+// the next person to sign in on this device never inherits (or uploads)
+// someone else's data.
+const ACCOUNT_LOCAL_KEYS = [...SYNCED_KEYS, 'plan', 'planAnswers', 'syncVersion', 'lastReviewedWeekStart']
+
+export function clearAccountLocalData() {
+  for (const key of ACCOUNT_LOCAL_KEYS) localStorage.removeItem(`75hard:${key}`)
 }
 
 const PUSH_INTERVAL_MS = 30000
 
 export function useSync(token) {
-  const [hydrated, setHydrated] = useState(false)
+  // Tracks WHICH token finished its initial pull, so switching accounts
+  // (logout -> login) can't briefly render with the previous state.
+  const [hydratedFor, setHydratedFor] = useState(null)
+  // Bumped whenever server data replaces local data after the app is up,
+  // so the app remounts and every hook re-reads fresh state.
+  const [generation, setGeneration] = useState(0)
   const versionRef = useRef(loadJSON('syncVersion', 0))
 
   async function pull() {
+    versionRef.current = loadJSON('syncVersion', 0)
     try {
       const { state, version } = await apiFetch('/state', { method: 'GET', token })
       versionRef.current = version
@@ -47,11 +68,11 @@ export function useSync(token) {
       // Only an existing account's data overwrites local — a brand-new
       // account's empty state (version 0) must never clobber local data;
       // that first upload is handled explicitly by the migration step.
-      if (version > 0) applyBlobToLocal(state)
+      if (version > 0 && applyBlobToLocal(state)) setGeneration((g) => g + 1)
     } catch {
       // offline or unreachable — keep whatever's already local
     } finally {
-      setHydrated(true)
+      setHydratedFor(token)
     }
   }
 
@@ -68,19 +89,16 @@ export function useSync(token) {
       if (err instanceof ApiError && err.status === 409 && err.data) {
         // Someone else (another device/tab) wrote more recently — adopt
         // their version as current rather than silently overwriting it.
-        applyBlobToLocal(err.data.serverState)
         versionRef.current = err.data.serverVersion
         saveJSON('syncVersion', err.data.serverVersion)
+        if (applyBlobToLocal(err.data.serverState)) setGeneration((g) => g + 1)
       }
       // network failure: just try again on the next interval
     }
   }
 
   useEffect(() => {
-    if (!token || !apiConfigured()) {
-      setHydrated(true)
-      return
-    }
+    if (!token || !apiConfigured()) return
     pull()
     const interval = setInterval(push, PUSH_INTERVAL_MS)
     const onHide = () => {
@@ -94,5 +112,6 @@ export function useSync(token) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
-  return { hydrated, pushNow: push }
+  const hydrated = !token || !apiConfigured() || hydratedFor === token
+  return { hydrated, generation, pushNow: push }
 }

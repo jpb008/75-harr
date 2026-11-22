@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from './hooks/useAuth'
-import { useSync } from './hooks/useSync'
+import { useSync, clearAccountLocalData } from './hooks/useSync'
 import { usePlan } from './hooks/usePlan'
 import { usePlanDay } from './hooks/usePlanDay'
 import { useWeeklyReview } from './hooks/useWeeklyReview'
@@ -27,7 +27,7 @@ import PlanView from './components/plan/PlanView'
 
 export default function App() {
   const auth = useAuth()
-  useSync(auth.token)
+  const sync = useSync(auth.token)
 
   async function handleSignup(email, password) {
     const session = await auth.signup(email, password)
@@ -41,7 +41,20 @@ export default function App() {
     return <AuthScreen onSignup={handleSignup} onLogin={auth.login} error={auth.error} />
   }
 
-  return <AuthenticatedApp token={auth.token} email={auth.email} onLogout={auth.logout} />
+  async function handleLogout() {
+    // Save anything not yet synced, then wipe this account's data from the
+    // device so the next sign-in starts clean.
+    await Promise.race([sync.pushNow(), new Promise((resolve) => setTimeout(resolve, 4000))])
+    clearAccountLocalData()
+    auth.logout()
+  }
+
+  // Wait for the account's saved data before rendering anything that reads
+  // it — otherwise a new device shows "Start your challenge" and could
+  // overwrite the real one.
+  if (!sync.hydrated) return null
+
+  return <AuthenticatedApp key={sync.generation} token={auth.token} email={auth.email} onLogout={handleLogout} />
 }
 
 function AuthenticatedApp({ token, email, onLogout }) {

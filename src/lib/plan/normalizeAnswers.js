@@ -29,6 +29,14 @@ function splitLegacySkills(list) {
   return { ids, other }
 }
 
+// Earlier versions only asked for a broad sport type plus free text.
+function legacySport(f) {
+  const name = (f.sportName ?? '').toLowerCase()
+  const byName = ['basketball', 'soccer', 'football', 'hockey', 'volleyball', 'baseball', 'softball', 'tennis', 'swimming'].find((s) => name.includes(s))
+  if (byName) return byName === 'softball' ? 'baseball' : byName
+  return { racket: 'tennis', combat: 'combat', running: 'running', team: 'other', other: 'other' }[f.sportType] ?? null
+}
+
 // Brings any saved answers (the original 5-step questionnaire or the
 // current detailed one) into the current shape with safe defaults, so the
 // engine and the edit form never have to special-case old accounts.
@@ -103,6 +111,10 @@ export function normalizeAnswers(raw) {
     eventDate: f.eventDate ?? null,
     sportType: f.sportType ?? null,
     sportName: f.sportName ?? '',
+    sport: f.sport ?? legacySport(f),
+    sportPosition: f.sportPosition ?? '',
+    season: f.season ?? 'none',
+    practiceDaysPerWeek: num(f.practiceDaysPerWeek) ?? 0,
     tightAreas: arr(f.tightAreas),
     pastObstacles: arr(f.pastObstacles),
     motivationWhy: f.motivationWhy ?? '',

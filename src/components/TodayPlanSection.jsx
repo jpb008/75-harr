@@ -1,4 +1,4 @@
-import { Dumbbell, HeartPulse, BedDouble, Brain, Wallet, Apple, ChevronRight, Check, Quote, Footprints, NotebookPen, Zap } from 'lucide-react'
+import { Dumbbell, HeartPulse, BedDouble, Brain, Wallet, Apple, ChevronRight, Check, Quote, Footprints, NotebookPen, Zap, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
 import Disclaimer from './Disclaimer'
 import WorkoutLogger from './WorkoutLogger'
@@ -104,6 +104,15 @@ export default function TodayPlanSection({ plan, planDayApi, onOpenPlan, motivat
                   <span className="text-xs text-[var(--ink-300)] tabular-nums shrink-0">{formatReps(ex)}</span>
                 </li>
               ))}
+              {todaysSession.sportPrep && (
+                <li className="flex items-center justify-between gap-3 py-2">
+                  <span className="flex items-center gap-2.5 min-w-0">
+                    <ShieldCheck size={14} className="text-[var(--success)] w-5 shrink-0" />
+                    <span className="text-sm text-[var(--ink-100)] truncate">{todaysSession.sportPrep.title}</span>
+                  </span>
+                  <span className="text-xs text-[var(--ink-300)] shrink-0">{todaysSession.sportPrep.drills.length} drills</span>
+                </li>
+              )}
               {todaysSession.finisher && (
                 <li className="flex items-center justify-between gap-3 py-2">
                   <span className="text-sm text-[var(--ink-100)] pl-7">{todaysSession.finisher.label}</span>

@@ -10,7 +10,7 @@ export default function HealthStep({ answers, update }) {
   return (
     <div className="space-y-4">
       <SectionCard icon={Moon} title="Sleep" hint="Sleep is when your body recovers and adapts. We build your evening routine around these times.">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 items-end">
           <Field label="Usual wake-up time">
             <input type="time" value={p.wakeTime} onChange={(e) => set({ wakeTime: e.target.value })} className={inputClass} />
           </Field>

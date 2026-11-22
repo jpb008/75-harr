@@ -16,6 +16,8 @@ import {
   StretchHorizontal,
   Timer,
   Zap,
+  ShieldCheck,
+  Trophy,
 } from 'lucide-react'
 import { Card, SectionCard, Disclosure, Pill, IconBadge } from '../ui'
 import { WEEKDAYS } from '../../lib/plan/options'
@@ -181,6 +183,25 @@ export function SessionDetail({ session, workoutLogs, weightUnit, injuries }) {
           <p className="text-sm text-[var(--ink-200)]">{session.finisher.description}</p>
         </Disclosure>
       )}
+      {session.sportPrep && (
+        <Disclosure
+          title={session.sportPrep.title}
+          subtitle={`About ${session.sportPrep.minutes} minutes, injury prevention`}
+          left={<IconBadge icon={ShieldCheck} size="sm" tone="success" />}
+        >
+          <div className="space-y-3">
+            <p className="text-xs text-[var(--ink-300)]">{session.sportPrep.note}</p>
+            {session.sportPrep.drills.map((d) => (
+              <div key={d.name}>
+                <p className="text-sm font-medium text-[var(--ink-50)]">
+                  {d.name} <span className="text-[var(--ink-300)] font-normal">· {d.prescription}</span>
+                </p>
+                <p className="text-sm text-[var(--ink-200)]">{d.cue}</p>
+              </div>
+            ))}
+          </div>
+        </Disclosure>
+      )}
       <Disclosure title="Cool-down" subtitle="About 5 minutes" left={<IconBadge icon={Snowflake} size="sm" tone="muted" />}>
         <MoveList items={session.cooldown} />
       </Disclosure>
@@ -198,8 +219,24 @@ export default function WorkoutTab({ plan, answers, workoutLogs, weightUnit }) {
   const warnings = (workout.notes ?? []).filter((n) => n.kind === 'warning')
   const otherNotes = (workout.notes ?? []).filter((n) => n.kind !== 'warning')
 
+  const seasonLabel = { inSeason: 'In season', preSeason: 'Pre-season', build: 'Off-season build' }
   return (
     <div className="space-y-4">
+      {workout.sport && (
+        <Card className="p-4 border-[var(--accent-a40)]">
+          <div className="flex items-start gap-3">
+            <IconBadge icon={Trophy} />
+            <div className="min-w-0">
+              <p className="text-[var(--ink-50)] font-semibold leading-tight">
+                Built for {workout.sport.label.toLowerCase()}
+                {workout.sport.position ? ` (${workout.sport.position})` : ''}
+              </p>
+              <p className="text-xs text-[var(--accent-light)] mt-0.5">{seasonLabel[workout.sport.season]}</p>
+              <p className="text-sm text-[var(--ink-200)] mt-1.5 leading-relaxed">{workout.sport.focus}</p>
+            </div>
+          </div>
+        </Card>
+      )}
       {warnings.map((note, i) => (
         <Card key={i} className="p-3 flex gap-3 border-[var(--danger-border)]">
           <IconBadge icon={AlertTriangle} tone="danger" size="sm" />

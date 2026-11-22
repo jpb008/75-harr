@@ -11,7 +11,7 @@ import {
   isContraindicated,
   videoSearchUrl,
 } from './exerciseLibrary'
-import { EQUIPMENT_OPTIONS, WEEKDAY_NAMES, MEDICAL_FLAGS, INJURY_OPTIONS, labelFor } from './options'
+import { EQUIPMENT_OPTIONS, WEEKDAY_NAMES, MEDICAL_FLAGS, INJURY_OPTIONS, SPORTS, labelFor } from './options'
 import { normalizeAnswers } from './normalizeAnswers'
 
 const LOWER_SLOTS = new Set(['squat', 'hinge', 'singleLeg', 'hamstringCurl', 'glutes', 'calves'])
@@ -110,7 +110,7 @@ function scoreExercise(ex, { tier, levels, priorityBwSlots }) {
 function candidatesForSlot(slot, ctx) {
   return exercisesForSlot(slot)
     .filter((ex) => isAvailable(ex, ctx.equipment) && !isContraindicated(ex, ctx.injuries))
-    .filter((ex) => ex.id !== 'jump_squat' || ctx.goals.includes('athleticPerformance'))
+    .filter((ex) => ex.id !== 'jump_squat' || ctx.sport)
     .filter((ex) => ex.id !== 'nordic_curl' || ctx.tier !== 'beginner')
     .map((ex) => ({ ex, score: scoreExercise(ex, ctx) }))
     // A negative score means a bodyweight progression that's too hard for
@@ -162,12 +162,13 @@ function goalCategory(goals, mainGoal) {
 // glute and row variations stay in a moderate range even for strength goals.
 const HEAVY_SLOTS = new Set(['squat', 'hinge', 'horizontalPush', 'verticalPush', 'verticalPull'])
 
-function prescribe(ex, { tier, category, isPriority, isFocus, recoveryLimited, levels }) {
+function prescribe(ex, { tier, category, isPriority, isFocus, recoveryLimited, levels, setsDelta }) {
   const config = TIER_CONFIG[tier]
   let cat = isPriority ? 'strength' : category
   if (cat === 'strength' && !isPriority && !HEAVY_SLOTS.has(ex.slot)) cat = 'hypertrophy'
-  let sets = config.setsPerExercise
+  let sets = config.setsPerExercise + (setsDelta ?? 0)
   if (isFocus && !recoveryLimited) sets += 1
+  sets = Math.max(2, sets)
   if (ex.pattern === 'isolation' && tier === 'beginner') sets = Math.min(sets, 2)
 
   const unit = ex.unit ?? 'reps'
@@ -218,7 +219,7 @@ function buildCooldown(slots, tightAreas) {
 
 function buildStrengthSession(template, occurrence, dayOfWeek, ctx) {
   const usedIds = new Set()
-  const focusSlots = new Set(ctx.muscleFocus.flatMap((f) => FOCUS_SLOTS[f] ?? []))
+  const focusSlots = new Set([...ctx.muscleFocus.flatMap((f) => FOCUS_SLOTS[f] ?? []), ...(ctx.sportFocusSlots ?? [])])
   const templateSlots = template.slots
 
   // Priority lifts lead the session on days that train their slot.
@@ -387,26 +388,33 @@ function buildCardioPlan(a, cardioDayCount, allowFinishers) {
   if (ability === 'walk') weeklyMinutes = Math.min(weeklyMinutes, 150)
 
   const sessions = []
-  const sessionCount = wantsEndurance ? 4 : goals.includes('fatLoss') || goals.includes('athleticPerformance') ? 3 : 2
+  const athlete = Boolean(sportOf(a))
+  const sessionCount = wantsEndurance ? 4 : goals.includes('fatLoss') || athlete ? 3 : 2
   const perSession = Math.min(Math.round(weeklyMinutes / Math.max(sessionCount, 1) / 5) * 5, wantsEndurance ? 90 : 45)
   for (let i = 0; i < sessionCount; i += 1) {
     let kind = 'easy'
     if (wantsEndurance && i === 0) kind = 'long'
-    else if (i === sessionCount - 1 && ability !== 'walk' && (wantsEndurance || goals.includes('athleticPerformance') || goals.includes('fatLoss')))
+    else if (i === sessionCount - 1 && ability !== 'walk' && (wantsEndurance || athlete || goals.includes('fatLoss')))
       kind = 'intervals'
     const modality = modalities[i % modalities.length]
     const minutes = kind === 'long' ? Math.round((perSession * 1.4) / 5) * 5 : kind === 'intervals' ? Math.max(20, perSession - 10) : perSession
     sessions.push({ kind, modality, minutes, label: `${kind === 'long' ? 'Long' : kind === 'intervals' ? 'Interval' : 'Easy'} ${MODALITY_LABELS[modality]?.toLowerCase() ?? 'cardio'}`, description: cardioDescription(kind, modality, ability, minutes) })
   }
 
-  // Athletes get sport-style conditioning first in line for its own day.
-  if (goals.includes('athleticPerformance') && !wantsEndurance) {
-    const sport = sportConditioning(a)
-    if (sport) {
-      const idx = sessions.findIndex((x) => x.kind === 'intervals')
-      if (idx >= 0) sessions.splice(idx, 1)
-      else sessions.pop()
-      sessions.unshift(sport)
+  // Athletes get sport-style conditioning first in line for its own day —
+  // except in season, when practices and games already provide it and
+  // extra hard conditioning only adds fatigue.
+  if (athlete && !wantsEndurance) {
+    if (seasonMode(a) === 'inSeason') {
+      for (let i = sessions.length - 1; i >= 0; i -= 1) if (sessions[i].kind === 'intervals') sessions.splice(i, 1)
+    } else {
+      const sport = sportConditioning(a)
+      if (sport) {
+        const idx = sessions.findIndex((x) => x.kind === 'intervals')
+        if (idx >= 0) sessions.splice(idx, 1)
+        else sessions.pop()
+        sessions.unshift(sport)
+      }
     }
   }
 
@@ -444,11 +452,14 @@ function buildCardioPlan(a, cardioDayCount, allowFinishers) {
 }
 
 
-// ── Sport-specific speed & power ─────────────────────────────────────────
+// ── Sport-specific training ──────────────────────────────────────────────
 // Plyometric volume is counted in foot contacts (landings). Caps sit
 // below common coaching guidance (NSCA: ~80-100 contacts for beginners)
-// on purpose, because these come on top of lifting. Placed right after
-// the warm-up, while fresh, twice a week on non-consecutive days.
+// on purpose, because these come on top of lifting and sport practice.
+// Injury-prevention ("sport prep") picks are the best-evidenced options
+// per sport: balance training for ankle sprains, Nordic curls for
+// hamstring strains, Copenhagen planks for groin injuries, rotator-cuff
+// work for throwing and overhead sports.
 const CONTACT_BUDGET = { beginner: 40, intermediate: 60, advanced: 80 }
 const JUMP_UNSAFE = new Set(['knee', 'ankle', 'hip', 'low_back'])
 const CUTTING_UNSAFE = new Set(['knee', 'ankle'])
@@ -459,41 +470,125 @@ const DRILLS = {
   broadJump: { name: 'Broad jump', reps: 3, contactsPerRep: 1, cue: 'Swing your arms, jump forward, and stick the landing for 2 seconds.' },
   lateralBound: { name: 'Lateral bound (skater jump)', reps: 3, contactsPerRep: 2, perSide: true, cue: 'Push off the outside leg, land on one foot, and hold balance.' },
   approachJump: { name: 'Approach jump (two-step into a vertical jump)', reps: 3, contactsPerRep: 1, cue: 'Make the last two steps quick, drive your arms up, land on both feet.' },
+  blockJump: { name: 'Block jump', reps: 4, contactsPerRep: 1, cue: 'Hands up at the start, jump straight up, land where you took off.' },
   lateralShuffle: { name: 'Lateral shuffle', prescription: '4 × 10 m each way', cue: "Stay low and don't cross your feet." },
   defensiveSlides: { name: 'Defensive slides', prescription: '4 × 15 sec', cue: 'Low stance, active hands, push off the trailing foot.' },
   closeouts: { name: 'Closeouts', prescription: '3 × 5', cue: 'Sprint 3-4 steps, chop your feet, arrive balanced with hands up.' },
   proShuttle: { name: '5-10-5 shuttle', prescription: '4 reps, full rest between', cue: 'Touch the line and drop your hips to change direction.' },
+  accelerations: { name: '10-yard accelerations', prescription: '6 × 10 yd, walk back', cue: 'Lean forward, short powerful steps, drive your arms.' },
   splitStep: { name: 'Split-step + first-step reaction', prescription: '4 × 6', cue: 'Small hop as the imaginary ball is hit, then explode to one side.' },
   shadowFootwork: { name: 'Shadow footwork patterns', prescription: '4 × 30 sec', cue: 'Move to each corner as if covering the court, recover to center.' },
   shadowbox: { name: 'Shadowboxing with footwork', prescription: '3 × 2 min', cue: 'Stay on the balls of your feet; move after every combination.' },
   strides: { name: 'Strides', prescription: '6 × 80 m at about 85% effort', cue: 'Smooth and fast, not all-out. Walk back to recover.' },
 }
 
-const SPORT_TEMPLATES = {
-  basketball: { jumps: ['pogo', 'approachJump', 'lateralBound'], agility: ['defensiveSlides', 'closeouts'] },
-  team: { jumps: ['pogo', 'boxJump', 'lateralBound'], agility: ['proShuttle', 'lateralShuffle'] },
-  racket: { jumps: ['pogo', 'lateralBound'], agility: ['splitStep', 'shadowFootwork'] },
-  combat: { jumps: ['pogo', 'broadJump'], agility: ['shadowbox'] },
-  running: { jumps: ['pogo', 'broadJump'], agility: ['strides'] },
-  other: { jumps: ['pogo', 'boxJump', 'broadJump'], agility: ['proShuttle', 'lateralShuffle'] },
+const PREHAB = {
+  singleLegBalance: { name: 'Single-leg balance', prescription: '3 × 30 sec each leg', cue: 'Eyes closed once it gets easy. Balance training is one of the best-supported ways to prevent ankle sprains.', unsafe: [] },
+  stickLandings: { name: 'Drop-and-stick landings', prescription: '3 × 5', cue: 'Step off a low step, land softly with knees over toes, freeze for 2 seconds.', unsafe: ['knee', 'ankle'] },
+  calfTibRaise: { name: 'Calf raises + tibialis raises', prescription: '2 × 15 each', cue: 'Strong lower legs absorb landing forces and help prevent shin splints.', unsafe: ['ankle'] },
+  nordic: { name: 'Nordic hamstring curl (assisted)', prescription: '2 × 4-6', cue: 'Lower as slowly as you can. In field-sport studies this cut hamstring strains by roughly half.', unsafe: ['knee'] },
+  copenhagen: { name: 'Copenhagen plank (knee on a bench)', prescription: '2 × 15-20 sec each side', cue: 'Top leg on the bench, lift your hips. Shown to reduce groin injuries in soccer and hockey.', unsafe: ['hip', 'knee'] },
+  externalRotation: { name: 'Band or side-lying external rotation', prescription: '2 × 12-15 each arm', cue: 'Elbow pinned to your side, rotate out slowly. Keeps the rotator cuff strong for throwing and overhead play.', unsafe: [] },
+  ytw: { name: 'Prone Y-T-W raises', prescription: '2 × 8 of each letter', cue: 'Lying face-down, thumbs up, squeeze your shoulder blades. Light — this is control work.', unsafe: [] },
+  neckIso: { name: 'Neck isometrics', prescription: '2 × 10 sec each direction', cue: 'Press your head gently into your hand front, back and sides. Light pressure, build gradually.', unsafe: ['neck'] },
+  hipFlexorStretch: { name: 'Half-kneeling hip flexor stretch', prescription: '2 × 45 sec each side', cue: 'Squeeze the back glute and tuck your hips under.', unsafe: [] },
+  bandWalk: { name: 'Band lateral walks (or side-lying leg raises)', prescription: '2 × 12 steps each way', cue: 'Hip strength keeps your knees tracking straight when you run.', unsafe: [] },
 }
 
-function sportKey(a) {
-  if (/basket/i.test(a.fitnessGoals.sportName ?? '')) return 'basketball'
-  return SPORT_TEMPLATES[a.fitnessGoals.sportType] ? a.fitnessGoals.sportType : 'other'
+const CONDITIONING = {
+  court: { label: 'Court conditioning', minutes: 25, description: "8-12 sprints of 15-20 sec (baseline to baseline and back), walking 45-60 sec between. Finish with 10 free throws while you're tired — that's the game." },
+  repeatSprint: { label: 'Repeated-sprint conditioning', minutes: 25, description: '8-10 sprints of 15 sec hard, 45 sec easy jog or walk between. This builds the repeat-sprint fitness field sports demand.' },
+  positionSprints: { label: 'Sprint work', minutes: 20, description: '8-10 sprints of 10-20 yards with a full walk-back recovery — short, explosive efforts like real plays.' },
+  shifts: { label: 'Shift intervals', minutes: 25, modality: 'cycling', description: '6-10 rounds of 40 sec hard on a bike, 90 sec easy — the same work-to-rest rhythm as hockey shifts.' },
+  jumpShuffle: { label: 'Jump & shuffle intervals', minutes: 20, description: '8 rounds of 20 sec shuffle-and-jump work, 40 sec rest. Keep every landing soft.' },
+  footwork: { label: 'Footwork intervals', minutes: 20, description: '10 rounds of 30 sec fast footwork patterns, 30 sec rest. Stay light on your feet.' },
+  rounds: { label: 'Round conditioning', minutes: 25, description: '5-6 rounds of 3 min hard work (shadowboxing, bag, or skipping rope), 1 min rest between — the same rhythm as a fight.' },
 }
 
-function buildAthleticBlock(a, tier) {
-  const template = SPORT_TEMPLATES[sportKey(a)]
+export const SPORT_PROFILES = {
+  basketball: {
+    jumps: ['pogo', 'approachJump', 'lateralBound'], agility: ['defensiveSlides', 'closeouts'],
+    focusSlots: ['singleLeg', 'glutes', 'calves'], prehab: ['singleLegBalance', 'stickLandings', 'calfTibRaise'], conditioning: 'court',
+    focus: 'Extra single-leg, glute and calf work for jumping and quick changes of direction, plus ankle and landing training to cut sprain risk.',
+  },
+  volleyball: {
+    jumps: ['pogo', 'approachJump', 'blockJump'], agility: ['lateralShuffle'],
+    focusSlots: ['squat', 'singleLeg', 'rearDelt'], prehab: ['stickLandings', 'singleLegBalance', 'externalRotation'], conditioning: 'jumpShuffle',
+    focus: 'Vertical jump power and landing control, plus shoulder care for spiking and serving.',
+  },
+  soccer: {
+    jumps: ['pogo', 'broadJump', 'lateralBound'], agility: ['accelerations', 'proShuttle'],
+    focusSlots: ['hamstringCurl', 'singleLeg', 'hinge'], prehab: ['nordic', 'copenhagen', 'singleLegBalance'], conditioning: 'repeatSprint',
+    focus: 'Hamstring and single-leg strength for sprinting, plus Nordic curls and Copenhagen planks — the two best-studied ways to prevent hamstring and groin injuries.',
+  },
+  football: {
+    jumps: ['broadJump', 'boxJump'], agility: ['accelerations', 'proShuttle'],
+    focusSlots: ['squat', 'hinge', 'horizontalPush'], prehab: ['nordic', 'neckIso', 'singleLegBalance'], conditioning: 'positionSprints',
+    focus: 'Lower-body strength and short-burst acceleration, plus hamstring and neck work for contact and sprinting.',
+  },
+  hockey: {
+    jumps: ['lateralBound', 'broadJump'], agility: ['lateralShuffle'],
+    focusSlots: ['singleLeg', 'glutes', 'coreLateral'], prehab: ['copenhagen', 'hipFlexorStretch', 'singleLegBalance'], conditioning: 'shifts',
+    focus: 'Lateral leg power for your stride and rotational core strength, plus groin and hip care — the most common hockey injuries.',
+  },
+  baseball: {
+    jumps: ['lateralBound'], agility: ['accelerations'],
+    focusSlots: ['rearDelt', 'coreLateral', 'singleLeg'], prehab: ['externalRotation', 'ytw'], conditioning: 'positionSprints',
+    focus: 'Rotational core strength and shoulder health for throwing and hitting, plus short sprints for the bases.',
+  },
+  tennis: {
+    jumps: ['pogo', 'lateralBound'], agility: ['splitStep', 'shadowFootwork'],
+    focusSlots: ['singleLeg', 'rearDelt', 'coreLateral'], prehab: ['externalRotation', 'singleLegBalance'], conditioning: 'footwork',
+    focus: 'Quick first steps and lateral movement, rotational core strength, and rotator-cuff care for serving.',
+  },
+  combat: {
+    jumps: ['pogo', 'broadJump'], agility: ['shadowbox'],
+    focusSlots: ['horizontalPull', 'coreAntiExtension', 'coreLateral'], prehab: ['neckIso', 'externalRotation'], conditioning: 'rounds',
+    focus: 'Pulling strength and a strong core for clinching and striking, neck work for impact, and round-based conditioning.',
+  },
+  running: {
+    jumps: ['pogo', 'broadJump'], agility: ['strides'],
+    focusSlots: ['singleLeg', 'calves', 'hamstringCurl'], prehab: ['calfTibRaise', 'singleLegBalance', 'bandWalk'], conditioning: null,
+    focus: 'Single-leg, calf and hamstring strength — the muscles that take the load in every stride — plus hip work to keep knees on track.',
+  },
+  swimming: {
+    jumps: [], agility: [],
+    focusSlots: ['verticalPull', 'rearDelt', 'coreAntiExtension'], prehab: ['externalRotation', 'ytw'], conditioning: null,
+    focus: 'Lats, upper back and core for a stronger pull, plus rotator-cuff work to protect swimmer\'s shoulders.',
+  },
+  other: {
+    jumps: ['pogo', 'boxJump', 'broadJump'], agility: ['proShuttle', 'lateralShuffle'],
+    focusSlots: ['singleLeg', 'coreLateral'], prehab: ['singleLegBalance'], conditioning: 'repeatSprint',
+    focus: 'General athletic power, agility and single-leg strength that carries over to most sports.',
+  },
+}
+
+export function sportOf(a) {
+  if (a.fitnessGoals.sport && SPORT_PROFILES[a.fitnessGoals.sport]) return a.fitnessGoals.sport
+  if (a.fitnessGoals.primary.includes('athleticPerformance')) return 'other'
+  return null
+}
+
+// In season, practices and games already supply jumping and conditioning,
+// so the gym's job shrinks to maintaining strength.
+function seasonMode(a) {
+  const season = a.fitnessGoals.season
+  if (season === 'inSeason' || (a.fitnessGoals.practiceDaysPerWeek ?? 0) >= 4) return 'inSeason'
+  return season === 'preSeason' ? 'preSeason' : 'build'
+}
+
+function buildAthleticBlock(a, tier, sport, mode) {
+  const profile = SPORT_PROFILES[sport]
   const injuries = a.training.injuries
   const noJumps = injuries.some((i) => JUMP_UNSAFE.has(i)) || a.training.painNow
   const noCutting = injuries.some((i) => CUTTING_UNSAFE.has(i)) || a.training.painNow
-  const sets = tier === 'beginner' ? 2 : 3
-  let budget = CONTACT_BUDGET[tier]
+  const sets = tier === 'beginner' || mode === 'inSeason' ? 2 : 3
+  let budget = mode === 'inSeason' ? Math.round(CONTACT_BUDGET[tier] / 2) : CONTACT_BUDGET[tier]
+  const startBudget = budget
   const drills = []
 
   if (!noJumps) {
-    for (const key of template.jumps) {
+    for (const key of profile.jumps) {
       const d = DRILLS[key]
       const contacts = sets * d.reps * d.contactsPerRep
       if (contacts > budget) continue
@@ -502,7 +597,7 @@ function buildAthleticBlock(a, tier) {
     }
   }
   if (!noCutting) {
-    for (const key of template.agility.slice(0, tier === 'beginner' ? 1 : 2)) {
+    for (const key of profile.agility.slice(0, tier === 'beginner' || mode === 'inSeason' ? 1 : 2)) {
       const d = DRILLS[key]
       drills.push({ name: d.name, prescription: d.prescription, cue: d.cue })
     }
@@ -510,28 +605,31 @@ function buildAthleticBlock(a, tier) {
   if (!drills.length) return null
   return {
     title: 'Speed & power',
-    minutes: tier === 'beginner' ? 8 : 12,
-    note: `Do this right after your warm-up, while you're fresh. Rest 60-90 sec between sets and stop if your landings get sloppy${noJumps ? '' : ` — max ${CONTACT_BUDGET[tier] - budget} jumps today`}.`,
+    minutes: tier === 'beginner' || mode === 'inSeason' ? 8 : 12,
+    note: `Do this right after your warm-up, while you're fresh. Rest 60-90 sec between sets and stop if your landings get sloppy${noJumps ? '' : ` — max ${startBudget - budget} jumps today`}.`,
     drills,
   }
 }
 
-const SPORT_CONDITIONING = {
-  basketball: { label: 'Court conditioning', minutes: 25, description: '8-12 sprints of 15-20 sec (baseline to baseline and back), walking 45-60 sec between. Finish with 10 free throws while you\'re tired — that\'s the game.' },
-  team: { label: 'Repeated-sprint conditioning', minutes: 25, description: '8-10 sprints of 15 sec hard, 45 sec easy jog or walk between. This builds the repeat-sprint fitness field sports demand.' },
-  racket: { label: 'Footwork intervals', minutes: 20, description: '10 rounds of 30 sec fast footwork patterns, 30 sec rest. Stay light on your feet.' },
-  combat: { label: 'Round conditioning', minutes: 25, description: '5-6 rounds of 3 min hard work (shadowboxing, bag, or skipping rope), 1 min rest between — the same rhythm as a fight.' },
+function buildSportPrep(a, sport) {
+  const drills = SPORT_PROFILES[sport].prehab
+    .map((key) => PREHAB[key])
+    .filter((d) => !d.unsafe.some((u) => a.training.injuries.includes(u)))
+    .map(({ name, prescription, cue }) => ({ name, prescription, cue }))
+  if (!drills.length) return null
+  return { title: 'Sport prep', minutes: 6, note: 'Injury-prevention work for your sport. Do it at the end of the session.', drills }
 }
 
 function sportConditioning(a) {
-  const key = sportKey(a)
-  const session = SPORT_CONDITIONING[key] ?? (key === 'other' ? SPORT_CONDITIONING.team : null)
-  if (!session) return null
+  const sport = sportOf(a)
+  const key = sport ? SPORT_PROFILES[sport].conditioning : null
+  if (!key) return null
   const lowImpact = a.training.injuries.some((i) => CUTTING_UNSAFE.has(i))
   if (lowImpact) {
     return { kind: 'intervals', modality: 'cycling', minutes: 20, label: 'Low-impact intervals', description: '8-10 × 20 sec hard on a bike, 40 sec easy. Same conditioning benefit without the impact on your joints.' }
   }
-  return { kind: 'intervals', modality: 'sports', ...session }
+  const session = CONDITIONING[key]
+  return { kind: 'intervals', modality: session.modality ?? 'sports', ...session }
 }
 
 function buildPhases(tier, event, eventDate) {
@@ -585,14 +683,17 @@ function buildNotes(a, ctx) {
   if (a.personal.age != null && a.personal.age >= 65) {
     notes.push({ kind: 'info', text: 'Add balance practice most days — for example, stand on one foot for 30 seconds per side, holding a counter if needed (CDC guidance for older adults).' })
   }
-  if (a.fitnessGoals.primary.includes('athleticPerformance')) {
+  if (ctx.sport) {
     const blocked = a.training.injuries.some((i) => JUMP_UNSAFE.has(i)) || a.training.painNow
-    notes.push({
-      kind: 'info',
-      text: blocked
-        ? 'Jump training was left out because of the injuries you listed. Get cleared by a physical therapist before adding jumps back in.'
-        : 'Two strength days start with a short speed & power block for your sport. Jumps are capped per session so they add to your lifting instead of wearing you down.',
-    })
+    if (blocked) notes.push({ kind: 'info', text: 'Jump training was left out because of the injuries you listed. Get cleared by a physical therapist before adding jumps back in.' })
+    if (ctx.seasonMode === 'inSeason') {
+      notes.push({
+        kind: 'tip',
+        text: "In season: lifting drops to 2 short sessions a week with one fewer set, to maintain strength without tiring your legs for games. Lift on lighter practice days, at least 48 hours before a game, and don't chase new maxes.",
+      })
+    } else if (ctx.seasonMode === 'preSeason') {
+      notes.push({ kind: 'tip', text: 'Pre-season: conditioning comes first in line for its own day so you show up in game shape. Keep lifting heavy but stop each set with a rep or two in reserve.' })
+    }
   }
   const obstacleNotes = {
     time: `Short on time? Sessions are built to fit ${a.training.sessionMinutes} minutes. On a crazy day, do just the first three exercises — that still counts.`,
@@ -631,6 +732,9 @@ export function generateWorkoutProgram(rawAnswers) {
   let strengthCount = clamp(availableDays.length, config.sessionsPerWeekRange[0], config.sessionsPerWeekRange[1])
   // Endurance goals need dedicated cardio days, so keep two free when possible.
   if (wantsEndurance) strengthCount = Math.max(Math.min(strengthCount, availableDays.length - 2), Math.min(2, availableDays.length))
+  const sport = sportOf(a)
+  const mode = sport ? seasonMode(a) : 'build'
+  if (mode === 'inSeason') strengthCount = Math.min(strengthCount, 2)
   const strengthDays = spreadDays(availableDays, strengthCount)
   const cardioDays = availableDays.filter((d) => !strengthDays.includes(d)).sort((x, y) => x - y)
 
@@ -650,18 +754,30 @@ export function generateWorkoutProgram(rawAnswers) {
     sessionMinutes: a.training.sessionMinutes,
     preferSupersets: a.fitnessGoals.pastObstacles.includes('time') && a.training.sessionMinutes <= 45,
     recoveryLimited,
+    sport,
+    seasonMode: mode,
+    sportFocusSlots: sport ? SPORT_PROFILES[sport].focusSlots : [],
+    setsDelta: mode === 'inSeason' ? -1 : 0,
   }
 
-  const templates = DAY_TEMPLATES[config.split]
+  const templates = DAY_TEMPLATES[mode === 'inSeason' ? 'full_body' : config.split]
   const occurrences = {}
-  const athleticBlock = goals.includes('athleticPerformance') ? buildAthleticBlock(a, tier) : null
-  const athleticIndexes = new Set(athleticBlock ? [0, Math.floor(strengthDays.length / 2)].filter((i) => i < strengthDays.length) : [])
+  const athleticBlock = sport ? buildAthleticBlock(a, tier, sport, mode) : null
+  const sportPrep = sport ? buildSportPrep(a, sport) : null
+  const blockCount = mode === 'inSeason' ? 1 : 2
+  const athleticIndexes = new Set(athleticBlock ? [0, Math.floor(strengthDays.length / 2)].slice(0, blockCount).filter((i) => i < strengthDays.length) : [])
+  // Sport prep goes on the other strength days when there are any, so no
+  // single session carries both extras.
+  const prepCandidates = strengthDays.map((_, i) => i).filter((i) => !athleticIndexes.has(i))
+  const prepIndexes = new Set(sportPrep ? (prepCandidates.length ? prepCandidates : [...athleticIndexes]).slice(0, 2) : [])
   const sessions = strengthDays.map((day, i) => {
     const template = templates[i % templates.length]
     occurrences[template.key] = (occurrences[template.key] ?? -1) + 1
     const withBlock = athleticIndexes.has(i)
-    const session = buildStrengthSession(template, occurrences[template.key], day, { ...ctx, reservedMinutes: withBlock ? athleticBlock.minutes : 0 })
-    return withBlock ? { ...session, athleticBlock } : session
+    const withPrep = prepIndexes.has(i)
+    const reservedMinutes = (withBlock ? athleticBlock.minutes : 0) + (withPrep ? sportPrep.minutes : 0)
+    const session = buildStrengthSession(template, occurrences[template.key], day, { ...ctx, reservedMinutes })
+    return { ...session, ...(withBlock ? { athleticBlock } : {}), ...(withPrep ? { sportPrep } : {}) }
   })
 
   const cardio = buildCardioPlan(a, cardioDays.length, a.training.sessionMinutes >= 45)
@@ -735,5 +851,14 @@ export function generateWorkoutProgram(rawAnswers) {
     phases,
     event: eventInfo,
     notes: buildNotes(a, ctx),
+    sport: sport
+      ? {
+          id: sport,
+          label: labelFor(SPORTS, sport),
+          position: a.fitnessGoals.sportPosition || null,
+          season: mode,
+          focus: SPORT_PROFILES[sport].focus,
+        }
+      : null,
   }
 }

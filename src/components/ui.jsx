@@ -290,3 +290,24 @@ export function Pill({ children, tone = 'muted' }) {
   }
   return <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${tones[tone]}`}>{children}</span>
 }
+
+// iPhones draw empty date boxes blank and ignore normal widths, so this
+// shows a placeholder when empty and relies on the date/time CSS fixes in
+// index.css to size consistently with the other inputs.
+export function DateInput({ value, onChange, max, placeholder = 'Pick a date', ariaLabel }) {
+  return (
+    <div className="relative">
+      <input
+        type="date"
+        value={value ? value.slice(0, 10) : ''}
+        max={max}
+        aria-label={ariaLabel}
+        onChange={(e) => onChange(e.target.value || null)}
+        className={`${inputClass} ${value ? '' : 'text-transparent'}`}
+      />
+      {!value && (
+        <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--ink-400)]">{placeholder}</span>
+      )}
+    </div>
+  )
+}

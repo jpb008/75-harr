@@ -40,7 +40,7 @@ export default function MentalGoalsStep({ answers, update }) {
       </SectionCard>
 
       <SectionCard icon={Smartphone} title="Screen time & distractions" hint="Check your phone's screen-time settings for your real daily average.">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 items-end">
           <Field label="Daily screen time now" optional>
             <NumberInput value={m.currentScreenTimeHours} onChange={(currentScreenTimeHours) => set({ currentScreenTimeHours })} min={0} max={20} step={0.5} suffix="hrs" />
           </Field>

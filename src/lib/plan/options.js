@@ -199,6 +199,27 @@ export const ENDURANCE_EVENTS = [
   { id: 'triathlon', label: 'Triathlon' },
 ]
 
+export const SPORTS = [
+  { id: 'basketball', label: 'Basketball' },
+  { id: 'soccer', label: 'Soccer' },
+  { id: 'football', label: 'Football' },
+  { id: 'hockey', label: 'Hockey' },
+  { id: 'volleyball', label: 'Volleyball' },
+  { id: 'baseball', label: 'Baseball / softball' },
+  { id: 'tennis', label: 'Tennis / racket sports' },
+  { id: 'combat', label: 'Boxing / MMA / martial arts' },
+  { id: 'running', label: 'Running / track' },
+  { id: 'swimming', label: 'Swimming' },
+  { id: 'other', label: 'Another sport' },
+]
+
+export const SEASONS = [
+  { id: 'offSeason', label: 'Off-season' },
+  { id: 'preSeason', label: 'Pre-season' },
+  { id: 'inSeason', label: 'In season' },
+  { id: 'none', label: 'Just for fun / no season' },
+]
+
 export const SPORT_TYPES = [
   { id: 'team', label: 'Team sport (basketball, soccer, football…)' },
   { id: 'racket', label: 'Racket sport' },

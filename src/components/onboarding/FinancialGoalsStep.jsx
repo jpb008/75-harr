@@ -1,5 +1,5 @@
 import { Wallet, Briefcase, TrendingUp, PiggyBank, GraduationCap } from 'lucide-react'
-import { SectionCard, Field, ChipGroup, OptionCards, NumberInput, Toggle, TextInput, inputClass } from '../ui'
+import { SectionCard, Field, ChipGroup, OptionCards, NumberInput, Toggle, TextInput, DateInput } from '../ui'
 import {
   EMPLOYMENT_STATUS,
   INCOME_INTERESTS,
@@ -29,26 +29,26 @@ export default function FinancialGoalsStep({ answers, update }) {
 
       {!f.skip && (
         <>
-          <SectionCard icon={Briefcase} title="Where you are now" hint="Your numbers stay private and are only used to calculate the pace needed to reach your target.">
+          <SectionCard icon={Briefcase} title="Where you are now" hint="All optional. Your numbers stay private and are only used to calculate the pace needed to reach your target.">
             <Field label="Work situation">
               <OptionCards options={EMPLOYMENT_STATUS} value={f.employmentStatus} onChange={(employmentStatus) => set({ employmentStatus })} columns={2} />
             </Field>
             <Field label="Your job or field" optional>
               <TextInput value={f.occupation} onChange={(occupation) => set({ occupation })} placeholder="e.g. retail, nursing, student in marketing" />
             </Field>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="Monthly income now" optional>
+            <div className="grid grid-cols-2 gap-3 items-end">
+              <Field label="Income now / month">
                 <NumberInput value={f.currentMonthlyIncome} onChange={(currentMonthlyIncome) => set({ currentMonthlyIncome })} min={0} suffix="$" />
               </Field>
-              <Field label="Target monthly income" optional>
+              <Field label="Target / month">
                 <NumberInput value={f.targetMonthlyIncome} onChange={(targetMonthlyIncome) => set({ targetMonthlyIncome })} min={0} suffix="$" />
               </Field>
             </div>
-            <div className="grid grid-cols-2 gap-3">
-              <Field label="By when?" optional>
-                <input type="date" value={f.targetDate ? f.targetDate.slice(0, 10) : ''} onChange={(e) => set({ targetDate: e.target.value || null })} className={inputClass} />
+            <div className="grid grid-cols-2 gap-3 items-end">
+              <Field label="Target date">
+                <DateInput value={f.targetDate} onChange={(targetDate) => set({ targetDate })} />
               </Field>
-              <Field label="Hours per week" optional>
+              <Field label="Hours / week">
                 <NumberInput value={f.hoursPerWeekAvailable} onChange={(hoursPerWeekAvailable) => set({ hoursPerWeekAvailable })} min={0} max={80} suffix="hrs" />
               </Field>
             </div>

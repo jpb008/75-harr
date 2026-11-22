@@ -1,11 +1,12 @@
-import { Target, Crosshair, Flag, Brain } from 'lucide-react'
-import { SectionCard, Field, ChipGroup, TextInput, inputClass } from '../ui'
+import { Target, Crosshair, Flag, Brain, Trophy } from 'lucide-react'
+import { SectionCard, Field, ChipGroup, TextInput, Segmented, DateInput } from '../ui'
 import {
   FITNESS_GOALS,
   MUSCLE_FOCUS_AREAS,
   PRIORITY_LIFTS,
   ENDURANCE_EVENTS,
-  SPORT_TYPES,
+  SPORTS,
+  SEASONS,
   TIGHT_AREAS,
   PAST_OBSTACLES,
 } from '../../lib/plan/options'
@@ -38,8 +39,39 @@ export default function FitnessGoalsStep({ answers, update }) {
           </Field>
         )}
         <Field label="Target date" optional hint="Leave blank if there's no deadline.">
-          <input type="date" value={f.targetDate ?? ''} onChange={(e) => set({ targetDate: e.target.value || null })} className={inputClass} />
+          <DateInput value={f.targetDate} onChange={(targetDate) => set({ targetDate })} />
         </Field>
+      </SectionCard>
+
+      <SectionCard
+        icon={Trophy}
+        title="Your sport"
+        hint="If you play a sport, your whole routine is built around it: sport-specific jumps and agility, extra work for the muscles it relies on, injury-prevention exercises, and conditioning that matches how it's played."
+      >
+        <Field label="Do you play a sport?">
+          <ChipGroup
+            options={[{ id: 'noSport', label: 'No sport' }, ...SPORTS]}
+            value={f.sport ?? 'noSport'}
+            onChange={(sport) => set({ sport: sport && sport !== 'noSport' ? sport : null })}
+          />
+        </Field>
+        {f.sport && (
+          <>
+            <Field label="Position" optional hint="Shown on your plan so you can see it's built for you.">
+              <TextInput value={f.sportPosition} onChange={(sportPosition) => set({ sportPosition })} placeholder="e.g. point guard, striker, goalie" />
+            </Field>
+            <Field label="Where are you in your season?" hint="In season, lifting shifts to maintaining strength so your legs stay fresh for games.">
+              <ChipGroup options={SEASONS} value={f.season} onChange={(season) => set({ season: season ?? 'none' })} />
+            </Field>
+            <Field label="Practices and games per week">
+              <Segmented
+                options={[0, 1, 2, 3, 4, 5, 6].map((n) => ({ id: n, label: n === 6 ? '6+' : String(n) }))}
+                value={f.practiceDaysPerWeek}
+                onChange={(practiceDaysPerWeek) => set({ practiceDaysPerWeek })}
+              />
+            </Field>
+          </>
+        )}
       </SectionCard>
 
       {f.primary.length > 0 && (
@@ -72,19 +104,9 @@ export default function FitnessGoalsStep({ answers, update }) {
               </Field>
               {f.enduranceEvent !== 'none' && (
                 <Field label="Event date" optional>
-                  <input type="date" value={f.eventDate ?? ''} onChange={(e) => set({ eventDate: e.target.value || null })} className={inputClass} />
+                  <DateInput value={f.eventDate} onChange={(eventDate) => set({ eventDate })} />
                 </Field>
               )}
-            </>
-          )}
-          {has('athleticPerformance') && (
-            <>
-              <Field label="What kind of sport?">
-                <ChipGroup options={SPORT_TYPES} value={f.sportType} onChange={(sportType) => set({ sportType })} />
-              </Field>
-              <Field label="Which sport or position?" optional>
-                <TextInput value={f.sportName} onChange={(sportName) => set({ sportName })} placeholder="e.g. basketball, point guard" />
-              </Field>
             </>
           )}
           <Field label="Areas that feel tight or stiff" optional hint="Adds a short mobility routine targeting these.">

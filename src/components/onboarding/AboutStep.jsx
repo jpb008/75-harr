@@ -10,7 +10,7 @@ export default function AboutStep({ answers, update }) {
   return (
     <div className="space-y-4">
       <SectionCard icon={User} title="You" hint="Age and sex are used for calorie and hydration estimates; country for money resources.">
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 items-end">
           <Field label="Age">
             <NumberInput value={p.age} onChange={(age) => set({ age, isUnder18: age != null && age < 18 })} min={13} max={100} placeholder="e.g. 25" />
           </Field>

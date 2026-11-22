@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Scale, TrendingDown, TrendingUp, Check, Trash2 } from 'lucide-react'
-import { SectionCard, NumberInput, Button, inputClass } from './ui'
+import { SectionCard, NumberInput, Button, DateInput } from './ui'
 import { weightTrend, calorieSuggestion, goalRate, fromKg, hasCalorieTarget } from '../lib/plan/bodyweight'
 
 function Chart({ points, unit }) {
@@ -57,7 +57,7 @@ export default function BodyWeightCard({ weighIns, setWeighIns, answers, unit, t
           Log
         </Button>
       </div>
-      <input type="date" value={date} max={todayStr} onChange={(e) => setDate(e.target.value || todayStr)} className={`${inputClass} text-sm`} aria-label="Weigh-in date" />
+      <DateInput value={date} max={todayStr} onChange={(d) => setDate(d || todayStr)} ariaLabel="Weigh-in date" />
 
       <Chart points={trend.points} unit={unit} />
 

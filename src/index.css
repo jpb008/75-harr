@@ -112,6 +112,26 @@ input[type='checkbox'].task-check:checked::before {
   transform: scale(1);
 }
 
+/* iPhone Safari gives date/time inputs their own intrinsic width, height
+   and centered text, so they overflow cards and don't line up with other
+   inputs. Resetting appearance makes them size like every other field. */
+input[type='date'],
+input[type='time'] {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 2.75rem;
+  line-height: 1.5rem;
+}
+
+input[type='date']::-webkit-date-and-time-value,
+input[type='time']::-webkit-date-and-time-value {
+  text-align: left;
+  margin: 0;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;

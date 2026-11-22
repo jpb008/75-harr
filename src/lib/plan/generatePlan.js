@@ -5,7 +5,7 @@ import { generateFinancialPlan } from './financial'
 import { buildDailySchedule } from './schedule'
 import { normalizeAnswers } from './normalizeAnswers'
 
-export const ENGINE_VERSION = 2
+export const ENGINE_VERSION = 3
 
 // Pure, deterministic — no AI call, no network, no randomness beyond the
 // id. Same answers in, same plan shape out. Free-text onboarding fields

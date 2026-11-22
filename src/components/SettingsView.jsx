@@ -1,11 +1,18 @@
 import { useState } from 'react'
 import { Palette, Bell, Flame, UserRound } from 'lucide-react'
-import { SectionCard } from './ui'
+import { SectionCard, Toggle } from './ui'
+
+const REMINDER_OPTIONS = [
+  { id: 'workout', label: 'Workout reminder', hint: 'At your planned workout time, on training days, if not done yet.' },
+  { id: 'evening', label: 'Evening check-in', hint: "9pm if checklist or habit tasks are left, 11pm if your streak is at risk." },
+  { id: 'weeklyMoney', label: 'Weekly money moves', hint: "Saturday at noon, if this week's money actions aren't done." },
+  { id: 'weighIn', label: 'Weekly weigh-in', hint: "Monday at wake-up, if you haven't weighed in this week." },
+]
 import { DEFAULT_TASKS, TASK_ICONS, TASK_COLORS } from '../lib/challenge'
 import { ACCENT_PRESETS } from '../lib/accent'
 import { BACKGROUND_PRESETS } from '../lib/background'
 
-const EXPORT_KEYS = ['challenge', 'days', 'history', 'goals', 'celebratedMilestones', 'planDays', 'plan', 'planAnswers']
+const EXPORT_KEYS = ['challenge', 'days', 'history', 'goals', 'celebratedMilestones', 'planDays', 'workoutLogs', 'weighIns', 'incomeLogs', 'reminderPrefs', 'plan', 'planAnswers']
 
 function exportData() {
   const data = {}
@@ -35,6 +42,8 @@ export default function SettingsView({
   notifications,
   email,
   onLogout,
+  reminderPrefs,
+  setReminderPrefs,
 }) {
   const [name, setName] = useState(challenge.name)
   const [lengthDays, setLengthDays] = useState(challenge.lengthDays)
@@ -157,6 +166,25 @@ export default function SettingsView({
                     : "Get a reminder if today's tasks aren't done by evening (9pm, then more urgently after 11pm). Only fires while the app is open or running in the background — not if it's fully closed."}
           </p>
         </div>
+
+        {notifications.enabled && (
+          <div className="space-y-4 pt-1">
+            <p className="text-xs text-[var(--ink-400)]">
+              {notifications.pushEnabled
+                ? 'Each reminder checks your progress first. Nothing is sent for things you already finished.'
+                : 'These need closed-app delivery, which isn\'t available on this device right now.'}
+            </p>
+            {REMINDER_OPTIONS.map((r) => (
+              <Toggle
+                key={r.id}
+                checked={reminderPrefs?.[r.id] !== false}
+                onChange={(on) => setReminderPrefs((prev) => ({ ...prev, [r.id]: on }))}
+                label={r.label}
+                hint={r.hint}
+              />
+            ))}
+          </div>
+        )}
 
         </SectionCard>
 

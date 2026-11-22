@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from './hooks/useAuth'
 import { useSync, clearAccountLocalData } from './hooks/useSync'
+import { useStoredState } from './hooks/useStoredState'
 import { usePlan } from './hooks/usePlan'
 import { usePlanDay } from './hooks/usePlanDay'
 import { useWeeklyReview } from './hooks/useWeeklyReview'
@@ -24,6 +25,8 @@ import AuthScreen from './components/AuthScreen'
 import OnboardingFlow from './components/onboarding/OnboardingFlow'
 import WeeklyReviewModal from './components/WeeklyReviewModal'
 import PlanView from './components/plan/PlanView'
+import { normalizeAnswers } from './lib/plan/normalizeAnswers'
+import { applyCalorieAdjustment } from './lib/plan/bodyweight'
 
 export default function App() {
   const auth = useAuth()
@@ -83,6 +86,11 @@ function AuthenticatedApp({ token, email, onLogout }) {
   const plan = usePlan(token)
   const planDayApi = usePlanDay(plan.plan)
   const weeklyReview = useWeeklyReview(token, plan.plan, plan.answers, plan.savePlan)
+  const [workoutLogs, setWorkoutLogs] = useStoredState('workoutLogs', {})
+  const [weighIns, setWeighIns] = useStoredState('weighIns', {})
+  const [incomeLogs, setIncomeLogs] = useStoredState('incomeLogs', {})
+  const [reminderPrefs, setReminderPrefs] = useStoredState('reminderPrefs', {})
+  const weightUnit = plan.answers?.personal?.units === 'metric' ? 'kg' : 'lb'
   const [tab, setTab] = useState('today')
   const [reviewOpen, setReviewOpen] = useState(false)
 
@@ -148,6 +156,10 @@ function AuthenticatedApp({ token, email, onLogout }) {
             window.scrollTo({ top: 0 })
           }}
           motivationWhy={plan.answers?.fitnessGoals?.motivationWhy || null}
+          workoutLogs={workoutLogs}
+          weightUnit={weightUnit}
+          injuries={plan.answers ? normalizeAnswers(plan.answers).training.injuries : []}
+          onSaveWorkoutLog={(sessionId, entries) => setWorkoutLogs((prev) => ({ ...prev, [todayDateStr]: { sessionId, entries } }))}
         />
       )}
       {tab === 'goals' && (
@@ -159,9 +171,21 @@ function AuthenticatedApp({ token, email, onLogout }) {
         />
       )}
       {tab === 'progress' && (
-        <ProgressView challenge={challenge} days={days} history={history} photoUrls={photos.urls} />
+        <ProgressView
+          challenge={challenge}
+          days={days}
+          history={history}
+          photoUrls={photos.urls}
+          weighIns={weighIns}
+          setWeighIns={setWeighIns}
+          answers={plan.answers ? normalizeAnswers(plan.answers) : null}
+          weightUnit={weightUnit}
+          onApplyCalorieAdjustment={(delta) =>
+            plan.savePlan(applyCalorieAdjustment(plan.answers, delta, todayDateStr), { source: 'calorie_adjustment' })
+          }
+        />
       )}
-      {tab === 'plan' && <PlanView plan={plan} />}
+      {tab === 'plan' && <PlanView plan={plan} workoutLogs={workoutLogs} weightUnit={weightUnit} incomeLogs={incomeLogs} setIncomeLogs={setIncomeLogs} />}
       {tab === 'settings' && (
         <SettingsView
           challenge={challenge}
@@ -176,6 +200,8 @@ function AuthenticatedApp({ token, email, onLogout }) {
           notifications={notifications}
           email={email}
           onLogout={onLogout}
+          reminderPrefs={reminderPrefs}
+          setReminderPrefs={setReminderPrefs}
         />
       )}
       <NavTabs active={tab} onChange={(next) => { setTab(next); window.scrollTo({ top: 0 }) }} />

@@ -4,6 +4,7 @@ import { today, addDays, parseDateStr } from '../lib/dates'
 import { loadJSON, saveJSON } from '../lib/storage'
 import { computeWeekSnapshot, proposeAdjustments } from '../lib/plan/weeklyReview'
 import { applyAdjustments } from '../lib/plan/applyAdjustments'
+import { calorieSuggestion } from '../lib/plan/bodyweight'
 
 function weekStartDateStr(dateStr) {
   const dow = parseDateStr(dateStr).getDay()
@@ -27,7 +28,12 @@ export function useWeeklyReview(token, plan, answers, savePlan) {
     const planDays = loadJSON('planDays', {})
     const weekSnapshot = computeWeekSnapshot(planDays, previousWeekStart)
     setSnapshot(weekSnapshot)
-    setProposals(proposeAdjustments(weekSnapshot))
+    const proposals = proposeAdjustments(weekSnapshot)
+    const calories = answers ? calorieSuggestion(loadJSON('weighIns', {}), answers, today()) : null
+    if (calories) {
+      proposals.push({ id: 'nutrition-calories', category: 'nutrition', action: calories.delta > 0 ? 'increase' : 'decrease', delta: calories.delta, reason: calories.reason })
+    }
+    setProposals(proposals)
   }
 
   async function submitReview(reviewAnswers, approvedAdjustmentIds) {

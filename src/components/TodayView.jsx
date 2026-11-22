@@ -23,6 +23,10 @@ export default function TodayView({
   planDayApi,
   onOpenPlan,
   motivationWhy,
+  workoutLogs,
+  weightUnit,
+  onSaveWorkoutLog,
+  injuries,
 }) {
   const [shareOpen, setShareOpen] = useState(false)
   const percent = challenge.tasks.length
@@ -132,7 +136,17 @@ export default function TodayView({
         Miss any task by midnight and the challenge resets to Day 1 automatically.
       </p>
 
-      {plan && <TodayPlanSection plan={plan} planDayApi={planDayApi} onOpenPlan={onOpenPlan} motivationWhy={motivationWhy} />}
+      {plan && <TodayPlanSection
+          plan={plan}
+          planDayApi={planDayApi}
+          onOpenPlan={onOpenPlan}
+          motivationWhy={motivationWhy}
+          workoutLogs={workoutLogs}
+          weightUnit={weightUnit}
+          onSaveWorkoutLog={onSaveWorkoutLog}
+          todayDateStr={todayDateStr}
+          injuries={injuries}
+        />}
 
       {shareOpen && (
         <ShareCardModal

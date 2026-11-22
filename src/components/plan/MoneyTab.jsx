@@ -1,6 +1,8 @@
 import { Flag, Briefcase, ShoppingBag, Clapperboard, LineChart, GraduationCap, PiggyBank, Megaphone, FileText, Scissors, Store, AppWindow } from 'lucide-react'
 import { SectionCard, Card } from '../ui'
 import Disclaimer from '../Disclaimer'
+import IncomeTracker from './IncomeTracker'
+import { trackedPaths } from '../../lib/plan/incomeTracking'
 
 const PATH_META = {
   freelancing: { title: 'Freelancing', icon: Briefcase },
@@ -18,7 +20,7 @@ const PATH_META = {
 
 const money = (n) => `$${Number(n).toLocaleString()}`
 
-export default function MoneyTab({ plan }) {
+export default function MoneyTab({ plan, incomeLogs = {}, setIncomeLogs }) {
   const f = plan.financial
   if (f.skipped || (f.paths.length === 0 && !f.milestones)) {
     return (
@@ -56,6 +58,16 @@ export default function MoneyTab({ plan }) {
             </div>
           )}
         </SectionCard>
+      )}
+
+      {setIncomeLogs && trackedPaths(plan).length > 0 && (
+        <IncomeTracker
+          paths={trackedPaths(plan)}
+          labels={Object.fromEntries(trackedPaths(plan).map((p) => [p.id, PATH_META[p.id]?.title ?? p.id]))}
+          incomeLogs={incomeLogs}
+          setIncomeLogs={setIncomeLogs}
+          milestones={f.milestones}
+        />
       )}
 
       {f.paths.map((path) => {

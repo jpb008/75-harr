@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { loadJSON, saveJSON } from '../lib/storage'
 import { notificationsSupported, requestNotificationPermission } from '../lib/notify'
-import { hasPushSubscription, pushConfigured, subscribeToPush, unsubscribeFromPush } from '../lib/push'
+import { pushConfigured, subscribeToPush, unsubscribeFromPush } from '../lib/push'
 
 export function useNotifications() {
   const supported = notificationsSupported()
@@ -12,14 +12,12 @@ export function useNotifications() {
   useEffect(() => saveJSON('notificationsEnabled', enabledPref), [enabledPref])
 
   // Re-establish the push subscription on mount if the preference was
-  // already on from a previous session (e.g. the subscription was lost, or
-  // this is a fresh service worker install).
+  // already on from a previous session.
   useEffect(() => {
     if (!enabledPref || permission !== 'granted' || !pushConfigured()) return
-    hasPushSubscription().then((has) => {
-      if (has) setPushActive(true)
-      else subscribeToPush().then(setPushActive)
-    })
+    // Always re-send (it's an upsert): this links subscriptions made before
+    // accounts existed, and refreshes the time-zone offset after travel.
+    subscribeToPush().then((ok) => setPushActive(ok || false))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

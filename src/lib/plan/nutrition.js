@@ -87,6 +87,8 @@ function estimateCalories(a, weightKg) {
     target = maintenance + 250
     label = 'Lean muscle gain'
   }
+  const adjustment = a.meta.calorieAdjustmentKcal ?? 0
+  target += adjustment
   const floored = target < floor
   target = Math.max(target, floor)
   return {
@@ -94,9 +96,12 @@ function estimateCalories(a, weightKg) {
     target,
     range: [target - 100, target + 100],
     label,
+    adjustment,
     note: floored
       ? `Your estimated target was below ${floor} kcal, so it was raised to that floor. Going lower generally needs medical supervision.`
-      : 'This is an estimate from a standard equation, not a measurement. Track your weight for 2-3 weeks and adjust by about 100-200 kcal if it moves faster or slower than planned.',
+      : adjustment
+        ? `Includes a ${adjustment > 0 ? '+' : ''}${adjustment} kcal adjustment based on your weigh-ins.`
+        : 'This is an estimate from a standard equation, not a measurement. Log your weight weekly in the Progress tab and the app will suggest small adjustments once there is a trend.',
   }
 }
 

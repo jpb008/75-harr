@@ -18,6 +18,10 @@ const SYNCED_KEY_DEFAULTS = {
   goals: [],
   celebratedMilestones: {},
   planDays: {},
+  workoutLogs: {},
+  weighIns: {},
+  incomeLogs: {},
+  reminderPrefs: {},
 }
 const SYNCED_KEYS = Object.keys(SYNCED_KEY_DEFAULTS)
 

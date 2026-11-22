@@ -273,7 +273,8 @@ function buildStrengthSession(template, occurrence, dayOfWeek, ctx) {
   const config = TIER_CONFIG[ctx.tier]
   const warmupSec = (ctx.sessionMinutes <= 30 ? 5 : 8) * 60
   const cooldownSec = (ctx.sessionMinutes <= 30 ? 3 : 5) * 60
-  const budget = ctx.sessionMinutes * 60 - warmupSec - cooldownSec
+  const reservedSec = (ctx.reservedMinutes ?? 0) * 60
+  const budget = ctx.sessionMinutes * 60 - warmupSec - cooldownSec - reservedSec
   const capped = exercises.slice(0, config.maxExercises)
 
   const straight = []
@@ -317,7 +318,7 @@ function buildStrengthSession(template, occurrence, dayOfWeek, ctx) {
     type: 'strength',
     label: template.label,
     format,
-    estimatedMinutes: Math.round((warmupSec + cooldownSec + workSeconds) / 60),
+    estimatedMinutes: Math.round((warmupSec + cooldownSec + reservedSec + workSeconds) / 60),
     warmup: buildWarmup(slotsInSession, ctx.sessionMinutes, chosen[0]?.name),
     exercises: chosen,
     cooldown: buildCooldown(slotsInSession, ctx.tightAreas),
@@ -398,6 +399,17 @@ function buildCardioPlan(a, cardioDayCount, allowFinishers) {
     sessions.push({ kind, modality, minutes, label: `${kind === 'long' ? 'Long' : kind === 'intervals' ? 'Interval' : 'Easy'} ${MODALITY_LABELS[modality]?.toLowerCase() ?? 'cardio'}`, description: cardioDescription(kind, modality, ability, minutes) })
   }
 
+  // Athletes get sport-style conditioning first in line for its own day.
+  if (goals.includes('athleticPerformance') && !wantsEndurance) {
+    const sport = sportConditioning(a)
+    if (sport) {
+      const idx = sessions.findIndex((x) => x.kind === 'intervals')
+      if (idx >= 0) sessions.splice(idx, 1)
+      else sessions.pop()
+      sessions.unshift(sport)
+    }
+  }
+
   // Sessions that don't get their own day become short finishers after
   // lifting — unless sessions are already short, where daily walking
   // (see the steps target) covers it instead of stretching the workout.
@@ -429,6 +441,97 @@ function buildCardioPlan(a, cardioDayCount, allowFinishers) {
         ? 'On days with both, lift first and do cardio after — or split them by a few hours. That protects your strength gains better than cardio first.'
         : null,
   }
+}
+
+
+// ── Sport-specific speed & power ─────────────────────────────────────────
+// Plyometric volume is counted in foot contacts (landings). Caps sit
+// below common coaching guidance (NSCA: ~80-100 contacts for beginners)
+// on purpose, because these come on top of lifting. Placed right after
+// the warm-up, while fresh, twice a week on non-consecutive days.
+const CONTACT_BUDGET = { beginner: 40, intermediate: 60, advanced: 80 }
+const JUMP_UNSAFE = new Set(['knee', 'ankle', 'hip', 'low_back'])
+const CUTTING_UNSAFE = new Set(['knee', 'ankle'])
+
+const DRILLS = {
+  pogo: { name: 'Pogo hops', reps: 10, contactsPerRep: 1, cue: 'Stiff ankles, bounce quickly off the balls of your feet, small height.' },
+  boxJump: { name: 'Jump onto a box or sturdy step', reps: 4, contactsPerRep: 1, cue: 'Land softly in a quarter squat. Step down — never jump down.' },
+  broadJump: { name: 'Broad jump', reps: 3, contactsPerRep: 1, cue: 'Swing your arms, jump forward, and stick the landing for 2 seconds.' },
+  lateralBound: { name: 'Lateral bound (skater jump)', reps: 3, contactsPerRep: 2, perSide: true, cue: 'Push off the outside leg, land on one foot, and hold balance.' },
+  approachJump: { name: 'Approach jump (two-step into a vertical jump)', reps: 3, contactsPerRep: 1, cue: 'Make the last two steps quick, drive your arms up, land on both feet.' },
+  lateralShuffle: { name: 'Lateral shuffle', prescription: '4 × 10 m each way', cue: "Stay low and don't cross your feet." },
+  defensiveSlides: { name: 'Defensive slides', prescription: '4 × 15 sec', cue: 'Low stance, active hands, push off the trailing foot.' },
+  closeouts: { name: 'Closeouts', prescription: '3 × 5', cue: 'Sprint 3-4 steps, chop your feet, arrive balanced with hands up.' },
+  proShuttle: { name: '5-10-5 shuttle', prescription: '4 reps, full rest between', cue: 'Touch the line and drop your hips to change direction.' },
+  splitStep: { name: 'Split-step + first-step reaction', prescription: '4 × 6', cue: 'Small hop as the imaginary ball is hit, then explode to one side.' },
+  shadowFootwork: { name: 'Shadow footwork patterns', prescription: '4 × 30 sec', cue: 'Move to each corner as if covering the court, recover to center.' },
+  shadowbox: { name: 'Shadowboxing with footwork', prescription: '3 × 2 min', cue: 'Stay on the balls of your feet; move after every combination.' },
+  strides: { name: 'Strides', prescription: '6 × 80 m at about 85% effort', cue: 'Smooth and fast, not all-out. Walk back to recover.' },
+}
+
+const SPORT_TEMPLATES = {
+  basketball: { jumps: ['pogo', 'approachJump', 'lateralBound'], agility: ['defensiveSlides', 'closeouts'] },
+  team: { jumps: ['pogo', 'boxJump', 'lateralBound'], agility: ['proShuttle', 'lateralShuffle'] },
+  racket: { jumps: ['pogo', 'lateralBound'], agility: ['splitStep', 'shadowFootwork'] },
+  combat: { jumps: ['pogo', 'broadJump'], agility: ['shadowbox'] },
+  running: { jumps: ['pogo', 'broadJump'], agility: ['strides'] },
+  other: { jumps: ['pogo', 'boxJump', 'broadJump'], agility: ['proShuttle', 'lateralShuffle'] },
+}
+
+function sportKey(a) {
+  if (/basket/i.test(a.fitnessGoals.sportName ?? '')) return 'basketball'
+  return SPORT_TEMPLATES[a.fitnessGoals.sportType] ? a.fitnessGoals.sportType : 'other'
+}
+
+function buildAthleticBlock(a, tier) {
+  const template = SPORT_TEMPLATES[sportKey(a)]
+  const injuries = a.training.injuries
+  const noJumps = injuries.some((i) => JUMP_UNSAFE.has(i)) || a.training.painNow
+  const noCutting = injuries.some((i) => CUTTING_UNSAFE.has(i)) || a.training.painNow
+  const sets = tier === 'beginner' ? 2 : 3
+  let budget = CONTACT_BUDGET[tier]
+  const drills = []
+
+  if (!noJumps) {
+    for (const key of template.jumps) {
+      const d = DRILLS[key]
+      const contacts = sets * d.reps * d.contactsPerRep
+      if (contacts > budget) continue
+      budget -= contacts
+      drills.push({ name: d.name, prescription: `${sets} × ${d.reps}${d.perSide ? ' each side' : ''}`, cue: d.cue })
+    }
+  }
+  if (!noCutting) {
+    for (const key of template.agility.slice(0, tier === 'beginner' ? 1 : 2)) {
+      const d = DRILLS[key]
+      drills.push({ name: d.name, prescription: d.prescription, cue: d.cue })
+    }
+  }
+  if (!drills.length) return null
+  return {
+    title: 'Speed & power',
+    minutes: tier === 'beginner' ? 8 : 12,
+    note: `Do this right after your warm-up, while you're fresh. Rest 60-90 sec between sets and stop if your landings get sloppy${noJumps ? '' : ` — max ${CONTACT_BUDGET[tier] - budget} jumps today`}.`,
+    drills,
+  }
+}
+
+const SPORT_CONDITIONING = {
+  basketball: { label: 'Court conditioning', minutes: 25, description: '8-12 sprints of 15-20 sec (baseline to baseline and back), walking 45-60 sec between. Finish with 10 free throws while you\'re tired — that\'s the game.' },
+  team: { label: 'Repeated-sprint conditioning', minutes: 25, description: '8-10 sprints of 15 sec hard, 45 sec easy jog or walk between. This builds the repeat-sprint fitness field sports demand.' },
+  racket: { label: 'Footwork intervals', minutes: 20, description: '10 rounds of 30 sec fast footwork patterns, 30 sec rest. Stay light on your feet.' },
+  combat: { label: 'Round conditioning', minutes: 25, description: '5-6 rounds of 3 min hard work (shadowboxing, bag, or skipping rope), 1 min rest between — the same rhythm as a fight.' },
+}
+
+function sportConditioning(a) {
+  const key = sportKey(a)
+  const session = SPORT_CONDITIONING[key] ?? (key === 'other' ? SPORT_CONDITIONING.team : null)
+  if (!session) return null
+  const lowImpact = a.training.injuries.some((i) => CUTTING_UNSAFE.has(i))
+  if (lowImpact) {
+    return { kind: 'intervals', modality: 'cycling', minutes: 20, label: 'Low-impact intervals', description: '8-10 × 20 sec hard on a bike, 40 sec easy. Same conditioning benefit without the impact on your joints.' }
+  }
+  return { kind: 'intervals', modality: 'sports', ...session }
 }
 
 function buildPhases(tier, event, eventDate) {
@@ -481,6 +584,15 @@ function buildNotes(a, ctx) {
   }
   if (a.personal.age != null && a.personal.age >= 65) {
     notes.push({ kind: 'info', text: 'Add balance practice most days — for example, stand on one foot for 30 seconds per side, holding a counter if needed (CDC guidance for older adults).' })
+  }
+  if (a.fitnessGoals.primary.includes('athleticPerformance')) {
+    const blocked = a.training.injuries.some((i) => JUMP_UNSAFE.has(i)) || a.training.painNow
+    notes.push({
+      kind: 'info',
+      text: blocked
+        ? 'Jump training was left out because of the injuries you listed. Get cleared by a physical therapist before adding jumps back in.'
+        : 'Two strength days start with a short speed & power block for your sport. Jumps are capped per session so they add to your lifting instead of wearing you down.',
+    })
   }
   const obstacleNotes = {
     time: `Short on time? Sessions are built to fit ${a.training.sessionMinutes} minutes. On a crazy day, do just the first three exercises — that still counts.`,
@@ -542,10 +654,14 @@ export function generateWorkoutProgram(rawAnswers) {
 
   const templates = DAY_TEMPLATES[config.split]
   const occurrences = {}
+  const athleticBlock = goals.includes('athleticPerformance') ? buildAthleticBlock(a, tier) : null
+  const athleticIndexes = new Set(athleticBlock ? [0, Math.floor(strengthDays.length / 2)].filter((i) => i < strengthDays.length) : [])
   const sessions = strengthDays.map((day, i) => {
     const template = templates[i % templates.length]
     occurrences[template.key] = (occurrences[template.key] ?? -1) + 1
-    return buildStrengthSession(template, occurrences[template.key], day, ctx)
+    const withBlock = athleticIndexes.has(i)
+    const session = buildStrengthSession(template, occurrences[template.key], day, { ...ctx, reservedMinutes: withBlock ? athleticBlock.minutes : 0 })
+    return withBlock ? { ...session, athleticBlock } : session
   })
 
   const cardio = buildCardioPlan(a, cardioDays.length, a.training.sessionMinutes >= 45)

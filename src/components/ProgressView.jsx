@@ -4,8 +4,9 @@ import { computeStats, computeHeatmapCells } from '../lib/stats'
 import StatsSection from './StatsSection'
 import HeatmapView from './HeatmapView'
 import PhotoTimeline from './PhotoTimeline'
+import BodyWeightCard from './BodyWeightCard'
 
-export default function ProgressView({ challenge, days, history, photoUrls }) {
+export default function ProgressView({ challenge, days, history, photoUrls, weighIns, setWeighIns, answers, weightUnit, onApplyCalorieAdjustment }) {
   const todayStr = today()
   const cells = Array.from({ length: challenge.lengthDays }, (_, i) => {
     const dateStr = addDays(challenge.startDate, i)
@@ -27,11 +28,25 @@ export default function ProgressView({ challenge, days, history, photoUrls }) {
   const heatmapCells = computeHeatmapCells(challenge, days)
 
   return (
-    <div className="max-w-xl mx-auto px-4 py-8">
-      <h2 className="font-display text-3xl text-[var(--ink-50)] mb-1">Progress</h2>
+    <div className="max-w-xl mx-auto px-4 pt-6 pb-4">
+      <h1 className="font-display text-5xl leading-none text-[var(--ink-50)] mb-2">Progress</h1>
       <p className="text-[var(--ink-300)] text-sm mb-6">
         Started {formatPretty(challenge.startDate)} · {challenge.lengthDays} day challenge
       </p>
+
+      {/* Weight tracking is left out entirely in safe mode (under 18, pregnant, or a history of disordered eating). */}
+      {answers && !answers.meta?.safeMode && setWeighIns && (
+        <div className="mb-8">
+          <BodyWeightCard
+            weighIns={weighIns}
+            setWeighIns={setWeighIns}
+            answers={answers}
+            unit={weightUnit}
+            todayStr={todayStr}
+            onApplyAdjustment={onApplyCalorieAdjustment}
+          />
+        </div>
+      )}
 
       <div className="grid grid-cols-8 gap-2 mb-8">
         {cells.map((c) => (

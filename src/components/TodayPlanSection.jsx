@@ -1,5 +1,7 @@
-import { Dumbbell, HeartPulse, BedDouble, Brain, Wallet, Apple, ChevronRight, Check, Quote, Footprints } from 'lucide-react'
+import { Dumbbell, HeartPulse, BedDouble, Brain, Wallet, Apple, ChevronRight, Check, Quote, Footprints, NotebookPen, Zap } from 'lucide-react'
+import { useState } from 'react'
 import Disclaimer from './Disclaimer'
+import WorkoutLogger from './WorkoutLogger'
 import { Card, IconBadge } from './ui'
 
 function CheckRow({ checked, onChange, children, extra }) {
@@ -37,7 +39,8 @@ function formatReps(ex) {
   return ex.unit === 'seconds' ? `${ex.sets}×${range}s` : ex.unit === 'perSide' ? `${ex.sets}×${range}/side` : `${ex.sets}×${range}`
 }
 
-export default function TodayPlanSection({ plan, planDayApi, onOpenPlan, motivationWhy }) {
+export default function TodayPlanSection({ plan, planDayApi, onOpenPlan, motivationWhy, workoutLogs = {}, weightUnit = 'lb', onSaveWorkoutLog, todayDateStr, injuries = [] }) {
+  const [loggerOpen, setLoggerOpen] = useState(false)
   if (!plan) return null
   const { todayRecord, todaysSession, toggleMentalDev, toggleFinancial, isFinancialDone, setWorkoutDone } = planDayApi
   const todayDow = new Date().getDay()
@@ -83,6 +86,15 @@ export default function TodayPlanSection({ plan, planDayApi, onOpenPlan, motivat
             <p className="text-sm text-[var(--ink-200)] leading-relaxed">{todaysSession.cardio.description}</p>
           ) : (
             <ul className="divide-y divide-[var(--ink-800)]">
+              {todaysSession.athleticBlock && (
+                <li className="flex items-center justify-between gap-3 py-2">
+                  <span className="flex items-center gap-2.5 min-w-0">
+                    <Zap size={14} className="text-[var(--accent-light)] w-5 shrink-0" />
+                    <span className="text-sm text-[var(--ink-100)] truncate">{todaysSession.athleticBlock.title}</span>
+                  </span>
+                  <span className="text-xs text-[var(--ink-300)] shrink-0">{todaysSession.athleticBlock.drills.length} drills</span>
+                </li>
+              )}
               {todaysSession.exercises.map((ex, i) => (
                 <li key={ex.exerciseId} className="flex items-center justify-between gap-3 py-2">
                   <span className="flex items-center gap-2.5 min-w-0">
@@ -100,24 +112,59 @@ export default function TodayPlanSection({ plan, planDayApi, onOpenPlan, motivat
               )}
             </ul>
           )}
-          <div className="flex gap-2 mt-3">
-            <button
-              type="button"
-              onClick={onOpenPlan}
-              className="flex-1 rounded-xl border border-[var(--ink-700)] py-2.5 text-sm font-medium text-[var(--ink-100)] hover:border-[var(--ink-600)]"
-            >
-              Warm-up & form tips
-            </button>
+          {todaysSession.type === 'strength' && workoutLogs[todayDateStr]?.entries && (
+            <p className="text-xs text-[var(--success)] mt-2">
+              Logged {Object.keys(workoutLogs[todayDateStr].entries).length} of {todaysSession.exercises.length} exercises today.
+            </p>
+          )}
+          <div className="grid grid-cols-2 gap-2 mt-3">
+            {todaysSession.type === 'strength' ? (
+              <button
+                type="button"
+                onClick={() => setLoggerOpen(true)}
+                className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-[var(--accent)] py-2.5 text-sm font-semibold text-white"
+              >
+                <NotebookPen size={16} /> {workoutLogs[todayDateStr]?.entries ? 'Edit log' : 'Log sets'}
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onOpenPlan}
+                className="rounded-xl border border-[var(--ink-700)] py-2.5 text-sm font-medium text-[var(--ink-100)] hover:border-[var(--ink-600)]"
+              >
+                Warm-up & details
+              </button>
+            )}
             <button
               type="button"
               onClick={() => setWorkoutDone(!workoutDone)}
-              className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-semibold transition-colors ${
-                workoutDone ? 'bg-[var(--success-soft)] text-[var(--success)] border border-[var(--success-border)]' : 'bg-[var(--accent)] text-white'
+              className={`inline-flex items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-semibold transition-colors ${
+                workoutDone ? 'bg-[var(--success-soft)] text-[var(--success)] border border-[var(--success-border)]' : 'border border-[var(--ink-700)] text-[var(--ink-100)]'
               }`}
             >
               <Check size={16} /> {workoutDone ? 'Done!' : 'Mark done'}
             </button>
           </div>
+          {todaysSession.type === 'strength' && (
+            <button type="button" onClick={onOpenPlan} className="w-full text-center text-xs text-[var(--ink-300)] hover:text-[var(--ink-50)] mt-2.5">
+              Warm-up, form tips & videos in the Plan tab
+            </button>
+          )}
+          {loggerOpen && (
+            <WorkoutLogger
+              session={todaysSession}
+              workoutLogs={workoutLogs}
+              todayStr={todayDateStr}
+              unit={weightUnit}
+              injuries={injuries}
+              onClose={() => setLoggerOpen(false)}
+              onSave={(entries) => {
+                onSaveWorkoutLog(todaysSession.id, entries)
+                if (!workoutDone) setWorkoutDone(true)
+                setLoggerOpen(false)
+              }}
+            />
+          )}
         </Card>
       ) : (
         todayPlan && (

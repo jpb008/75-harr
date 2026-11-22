@@ -1,6 +1,8 @@
 import { generatePlan } from './generatePlan'
 import { TIERS } from './tierConfig'
 import { normalizeAnswers } from './normalizeAnswers'
+import { applyCalorieAdjustment } from './bodyweight'
+import { today } from '../dates'
 
 // Approving a proposal edits the ONBOARDING ANSWERS, then regenerates the
 // plan through the same deterministic engine everyone else's plan comes
@@ -37,6 +39,7 @@ export function applyAdjustments(rawAnswers, approvedAdjustments) {
   for (const adjustment of approvedAdjustments) {
     if (adjustment.category === 'workout') nextAnswers = adjustAnswersForWorkout(nextAnswers, adjustment.action)
     else if (adjustment.category === 'mentalDev') nextAnswers = adjustAnswersForMentalDev(nextAnswers, adjustment.action)
+    else if (adjustment.category === 'nutrition' && adjustment.delta) nextAnswers = applyCalorieAdjustment(nextAnswers, adjustment.delta, today())
   }
   return { answers: nextAnswers, plan: generatePlan(nextAnswers) }
 }

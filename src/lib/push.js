@@ -1,3 +1,5 @@
+import { getStoredSession } from './auth'
+
 const VAPID_PUBLIC_KEY = import.meta.env.VITE_VAPID_PUBLIC_KEY
 const PUSH_API_URL = import.meta.env.VITE_PUSH_API_URL
 
@@ -22,25 +24,18 @@ export async function subscribeToPush() {
       userVisibleOnly: true,
       applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
     })
+    // Sending the session token links this device to the account, so the
+    // server can check real progress before sending a reminder.
+    const token = getStoredSession()?.token
     await fetch(`${PUSH_API_URL}/subscribe`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: JSON.stringify({
         subscription: subscription.toJSON(),
         tzOffsetMinutes: new Date().getTimezoneOffset(),
       }),
     })
     return true
-  } catch {
-    return false
-  }
-}
-
-export async function hasPushSubscription() {
-  if (!('serviceWorker' in navigator)) return false
-  try {
-    const registration = await navigator.serviceWorker.ready
-    return Boolean(await registration.pushManager.getSubscription())
   } catch {
     return false
   }

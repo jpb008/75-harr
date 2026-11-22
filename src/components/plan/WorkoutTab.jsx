@@ -15,9 +15,11 @@ import {
   Repeat,
   StretchHorizontal,
   Timer,
+  Zap,
 } from 'lucide-react'
 import { Card, SectionCard, Disclosure, Pill, IconBadge } from '../ui'
 import { WEEKDAYS } from '../../lib/plan/options'
+import { suggestNext } from '../../lib/plan/progression'
 
 const TYPE_STYLE = {
   strength: { icon: Dumbbell, dot: 'bg-[var(--accent)]', label: 'Strength' },
@@ -62,7 +64,8 @@ function MoveList({ items }) {
   )
 }
 
-export function ExerciseCard({ ex, index }) {
+export function ExerciseCard({ ex, index, workoutLogs, weightUnit, injuries }) {
+  const suggestion = workoutLogs ? suggestNext(ex, workoutLogs, { unit: weightUnit, injuries }) : null
   return (
     <Disclosure
       left={
@@ -77,6 +80,15 @@ export function ExerciseCard({ ex, index }) {
       }
     >
       <div className="space-y-3 pt-1">
+        {suggestion && (
+          <div className="rounded-lg bg-[var(--accent-a10)] border border-[var(--accent-a40)] px-3 py-2">
+            <p className="text-sm text-[var(--ink-50)]">
+              <span className="font-semibold">Next time: </span>
+              {suggestion.text}
+            </p>
+            {suggestion.last && <p className="text-xs text-[var(--ink-300)] mt-0.5">Last time: {suggestion.last}</p>}
+          </div>
+        )}
         {ex.cues?.length > 0 && (
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-300)] mb-1.5">How to do it</p>
@@ -117,7 +129,7 @@ export function ExerciseCard({ ex, index }) {
   )
 }
 
-export function SessionDetail({ session }) {
+export function SessionDetail({ session, workoutLogs, weightUnit, injuries }) {
   if (!session) return null
   if (session.type === 'cardio') {
     return (
@@ -142,8 +154,27 @@ export function SessionDetail({ session }) {
       <Disclosure title="Warm-up" subtitle="About 5-8 minutes" left={<IconBadge icon={Flame} size="sm" tone="muted" />}>
         <MoveList items={session.warmup} />
       </Disclosure>
+      {session.athleticBlock && (
+        <Disclosure
+          title={session.athleticBlock.title}
+          subtitle={`About ${session.athleticBlock.minutes} minutes, right after warm-up`}
+          left={<IconBadge icon={Zap} size="sm" />}
+        >
+          <div className="space-y-3">
+            <p className="text-xs text-[var(--ink-300)]">{session.athleticBlock.note}</p>
+            {session.athleticBlock.drills.map((d) => (
+              <div key={d.name}>
+                <p className="text-sm font-medium text-[var(--ink-50)]">
+                  {d.name} <span className="text-[var(--ink-300)] font-normal">· {d.prescription}</span>
+                </p>
+                <p className="text-sm text-[var(--ink-200)]">{d.cue}</p>
+              </div>
+            ))}
+          </div>
+        </Disclosure>
+      )}
       {session.exercises.map((ex, i) => (
-        <ExerciseCard key={ex.exerciseId} ex={ex} index={i} />
+        <ExerciseCard key={ex.exerciseId} ex={ex} index={i} workoutLogs={workoutLogs} weightUnit={weightUnit} injuries={injuries} />
       ))}
       {session.finisher && (
         <Disclosure title={`Finisher: ${session.finisher.label}`} subtitle={`${session.finisher.minutes} min`} left={<IconBadge icon={HeartPulse} size="sm" tone="success" />}>
@@ -157,7 +188,7 @@ export function SessionDetail({ session }) {
   )
 }
 
-export default function WorkoutTab({ plan, answers }) {
+export default function WorkoutTab({ plan, answers, workoutLogs, weightUnit }) {
   const workout = plan.workout
   const todayDow = new Date().getDay()
   const [selectedDay, setSelectedDay] = useState(todayDow)
@@ -234,7 +265,7 @@ export default function WorkoutTab({ plan, answers }) {
         hint={session ? `About ${session.estimatedMinutes} minutes` : day.detail}
       >
         {session ? (
-          <SessionDetail session={session} />
+          <SessionDetail session={session} workoutLogs={workoutLogs} weightUnit={weightUnit} injuries={answers?.training?.injuries ?? []} />
         ) : workout.mobility ? (
           <div>
             <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-300)] mb-2">Mobility routine</p>

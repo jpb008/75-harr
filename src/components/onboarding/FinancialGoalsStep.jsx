@@ -1,128 +1,107 @@
-import { useState } from 'react'
+import { Wallet, Briefcase, TrendingUp, PiggyBank, GraduationCap } from 'lucide-react'
+import { SectionCard, Field, ChipGroup, OptionCards, NumberInput, Toggle, TextInput, inputClass } from '../ui'
+import {
+  EMPLOYMENT_STATUS,
+  INCOME_INTERESTS,
+  PATH_EXPERIENCE,
+  STARTUP_BUDGETS,
+  SKILLS,
+  EMERGENCY_FUND_LEVELS,
+  SPENDING_TRACKING,
+  YES_NO_UNSURE,
+} from '../../lib/plan/options'
 
-const INTERESTS = [
-  { id: 'freelancing', label: 'Freelancing' },
-  { id: 'ecommerce', label: 'E-commerce' },
-  { id: 'contentCreation', label: 'Content creation' },
-  { id: 'affiliateMarketing', label: 'Affiliate marketing' },
-  { id: 'investing', label: 'Investing' },
-  { id: 'skillBuilding', label: 'Building a skill for a raise/new role' },
-]
-
-function parseCsv(text) {
-  return text
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean)
-}
-
-export default function FinancialGoalsStep({ initial, onNext, onBack }) {
-  const [employmentStatus, setEmploymentStatus] = useState(initial.employmentStatus ?? 'employed')
-  const [currentMonthlyIncome, setCurrentMonthlyIncome] = useState(initial.currentMonthlyIncome ?? '')
-  const [targetMonthlyIncome, setTargetMonthlyIncome] = useState(initial.targetMonthlyIncome ?? '')
-  const [targetDate, setTargetDate] = useState(initial.targetDate ? initial.targetDate.slice(0, 10) : '')
-  const [hoursPerWeekAvailable, setHoursPerWeekAvailable] = useState(initial.hoursPerWeekAvailable ?? '')
-  const [interests, setInterests] = useState(initial.interests ?? [])
-  const [currentSkills, setCurrentSkills] = useState((initial.currentSkills ?? []).join(', '))
-  const [desiredSkills, setDesiredSkills] = useState((initial.desiredSkills ?? []).join(', '))
-  const [hasEmergencyFund, setHasEmergencyFund] = useState(initial.hasEmergencyFund ?? false)
-
-  const chipClass = (active) =>
-    `rounded-full px-3 py-1.5 text-sm border transition-colors ${
-      active ? 'bg-[var(--accent)] border-[var(--accent)] text-white' : 'bg-[var(--ink-900)] border-[var(--ink-700)] text-[var(--ink-300)]'
-    }`
-  const inputClass =
-    'w-full rounded-lg bg-[var(--ink-900)] border border-[var(--ink-700)] px-3 py-2 text-[var(--ink-50)] focus:outline-none focus:border-[var(--accent)] transition-colors'
-
-  function toggle(value) {
-    setInterests((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]))
-  }
-
-  function submit() {
-    onNext({
-      employmentStatus,
-      currentMonthlyIncome: currentMonthlyIncome === '' ? null : Number(currentMonthlyIncome),
-      targetMonthlyIncome: targetMonthlyIncome === '' ? null : Number(targetMonthlyIncome),
-      targetDate: targetDate || null,
-      hoursPerWeekAvailable: hoursPerWeekAvailable === '' ? null : Number(hoursPerWeekAvailable),
-      interests,
-      currentSkills: parseCsv(currentSkills),
-      desiredSkills: parseCsv(desiredSkills),
-      hasEmergencyFund,
-    })
-  }
+export default function FinancialGoalsStep({ answers, update }) {
+  const f = answers.financialGoals
+  const set = (patch) => update('financialGoals', patch)
+  const needsBudget = f.interests.some((i) => ['ecommerce', 'contentCreation', 'affiliateMarketing'].includes(i))
 
   return (
-    <div className="space-y-6">
-      <p className="text-xs text-[var(--ink-400)]">
-        This section is optional — leave it blank to skip financial planning entirely.
-      </p>
+    <div className="space-y-4">
+      <SectionCard icon={Wallet} title="Include money goals?">
+        <Toggle
+          checked={!f.skip}
+          onChange={(on) => set({ skip: !on })}
+          label="Add money & career goals to my plan"
+          hint="Turn off to skip this section entirely."
+        />
+      </SectionCard>
 
-      <div>
-        <label className="block text-sm text-[var(--ink-300)] mb-1.5">Employment status</label>
-        <select value={employmentStatus} onChange={(e) => setEmploymentStatus(e.target.value)} className={inputClass}>
-          <option value="employed">Employed</option>
-          <option value="self-employed">Self-employed / have a business</option>
-          <option value="student">Student</option>
-          <option value="unemployed">Not currently working</option>
-        </select>
-      </div>
+      {!f.skip && (
+        <>
+          <SectionCard icon={Briefcase} title="Where you are now" hint="Your numbers stay private and are only used to calculate the pace needed to reach your target.">
+            <Field label="Work situation">
+              <OptionCards options={EMPLOYMENT_STATUS} value={f.employmentStatus} onChange={(employmentStatus) => set({ employmentStatus })} columns={2} />
+            </Field>
+            <Field label="Your job or field" optional>
+              <TextInput value={f.occupation} onChange={(occupation) => set({ occupation })} placeholder="e.g. retail, nursing, student in marketing" />
+            </Field>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="Monthly income now" optional>
+                <NumberInput value={f.currentMonthlyIncome} onChange={(currentMonthlyIncome) => set({ currentMonthlyIncome })} min={0} suffix="$" />
+              </Field>
+              <Field label="Target monthly income" optional>
+                <NumberInput value={f.targetMonthlyIncome} onChange={(targetMonthlyIncome) => set({ targetMonthlyIncome })} min={0} suffix="$" />
+              </Field>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <Field label="By when?" optional>
+                <input type="date" value={f.targetDate ? f.targetDate.slice(0, 10) : ''} onChange={(e) => set({ targetDate: e.target.value || null })} className={inputClass} />
+              </Field>
+              <Field label="Hours per week" optional>
+                <NumberInput value={f.hoursPerWeekAvailable} onChange={(hoursPerWeekAvailable) => set({ hoursPerWeekAvailable })} min={0} max={80} suffix="hrs" />
+              </Field>
+            </div>
+          </SectionCard>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm text-[var(--ink-300)] mb-1.5">Current monthly income (optional)</label>
-          <input type="number" value={currentMonthlyIncome} onChange={(e) => setCurrentMonthlyIncome(e.target.value)} className={inputClass} />
-        </div>
-        <div>
-          <label className="block text-sm text-[var(--ink-300)] mb-1.5">Target monthly income</label>
-          <input type="number" value={targetMonthlyIncome} onChange={(e) => setTargetMonthlyIncome(e.target.value)} className={inputClass} />
-        </div>
-      </div>
+          <SectionCard icon={TrendingUp} title="How you want to grow income">
+            <Field label="Paths you're interested in">
+              <ChipGroup options={INCOME_INTERESTS} value={f.interests} onChange={(interests) => set({ interests })} multi />
+            </Field>
+            {f.interests.length > 0 && (
+              <Field label="Your experience with these">
+                <ChipGroup options={PATH_EXPERIENCE} value={f.pathExperience} onChange={(pathExperience) => set({ pathExperience: pathExperience ?? 'none' })} />
+              </Field>
+            )}
+            {needsBudget && (
+              <Field label="Money you could put in to start" hint="Low budgets get a 'test demand before you spend' approach.">
+                <ChipGroup options={STARTUP_BUDGETS} value={f.startupBudget} onChange={(startupBudget) => set({ startupBudget })} />
+              </Field>
+            )}
+          </SectionCard>
 
-      <div className="grid grid-cols-2 gap-4">
-        <div>
-          <label className="block text-sm text-[var(--ink-300)] mb-1.5">Target date</label>
-          <input type="date" value={targetDate} onChange={(e) => setTargetDate(e.target.value)} className={inputClass} />
-        </div>
-        <div>
-          <label className="block text-sm text-[var(--ink-300)] mb-1.5">Hours/week available</label>
-          <input type="number" value={hoursPerWeekAvailable} onChange={(e) => setHoursPerWeekAvailable(e.target.value)} className={inputClass} />
-        </div>
-      </div>
+          <SectionCard icon={GraduationCap} title="Skills" hint="Skills you want to learn get their own section in your learning library.">
+            <Field label="Skills you already have" optional>
+              <ChipGroup options={SKILLS} value={f.currentSkills} onChange={(currentSkills) => set({ currentSkills })} multi />
+            </Field>
+            <Field label="Skills you want to learn">
+              <ChipGroup options={SKILLS} value={f.desiredSkills} onChange={(desiredSkills) => set({ desiredSkills })} multi />
+            </Field>
+            <Field label="Other skills not listed" optional>
+              <TextInput value={f.otherSkillsText} onChange={(otherSkillsText) => set({ otherSkillsText })} placeholder="e.g. 3D modeling, welding, Spanish" />
+            </Field>
+          </SectionCard>
 
-      <div>
-        <label className="block text-sm text-[var(--ink-300)] mb-1.5">What's the main way you want to grow your income? (pick any)</label>
-        <div className="flex gap-2 flex-wrap">
-          {INTERESTS.map((i) => (
-            <button key={i.id} type="button" onClick={() => toggle(i.id)} className={chipClass(interests.includes(i.id))}>
-              {i.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div>
-        <label className="block text-sm text-[var(--ink-300)] mb-1.5">Skills you already have (comma-separated, optional)</label>
-        <input value={currentSkills} onChange={(e) => setCurrentSkills(e.target.value)} className={inputClass} />
-      </div>
-      <div>
-        <label className="block text-sm text-[var(--ink-300)] mb-1.5">Skills you want to learn (comma-separated, optional)</label>
-        <input value={desiredSkills} onChange={(e) => setDesiredSkills(e.target.value)} className={inputClass} />
-      </div>
-
-      <label className="flex items-center gap-2 text-sm text-[var(--ink-200)]">
-        <input type="checkbox" checked={hasEmergencyFund} onChange={(e) => setHasEmergencyFund(e.target.checked)} />
-        I already have an emergency fund set aside
-      </label>
-
-      <div className="flex gap-3">
-        <button onClick={onBack} className="flex-1 rounded-lg border border-[var(--ink-700)] text-[var(--ink-300)] py-2.5 hover:text-[var(--ink-50)] transition-colors">
-          Back
-        </button>
-        <button onClick={submit} className="flex-1 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white font-medium py-2.5 transition-colors">
-          Continue
-        </button>
-      </div>
+          <SectionCard icon={PiggyBank} title="Money basics" hint="These add simple weekly habits from consumer-finance guidance (CFPB/FDIC). Not financial advice.">
+            <Field label="Emergency savings (months of expenses)">
+              <ChipGroup
+                options={EMERGENCY_FUND_LEVELS}
+                value={f.emergencyFundLevel}
+                onChange={(emergencyFundLevel) => set({ emergencyFundLevel, hasEmergencyFund: ['3to6', 'over6'].includes(emergencyFundLevel) })}
+              />
+            </Field>
+            <Field label="Do you have high-interest debt (like credit cards)?">
+              <ChipGroup options={YES_NO_UNSURE} value={f.hasHighInterestDebt} onChange={(hasHighInterestDebt) => set({ hasHighInterestDebt })} />
+            </Field>
+            <Field label="Do you track your spending?">
+              <ChipGroup options={SPENDING_TRACKING} value={f.tracksSpending} onChange={(tracksSpending) => set({ tracksSpending })} />
+            </Field>
+            <Field label="Do you have a retirement account?">
+              <ChipGroup options={YES_NO_UNSURE} value={f.hasRetirementAccount} onChange={(hasRetirementAccount) => set({ hasRetirementAccount })} />
+            </Field>
+          </SectionCard>
+        </>
+      )}
     </div>
   )
 }

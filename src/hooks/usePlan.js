@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { apiFetch, apiConfigured } from '../lib/api'
-import { generatePlan } from '../lib/plan/generatePlan'
+import { generatePlan, ENGINE_VERSION } from '../lib/plan/generatePlan'
 import { loadJSON, saveJSON } from '../lib/storage'
 
 export function usePlan(token) {
@@ -25,6 +25,16 @@ export function usePlan(token) {
       })
       .finally(() => setLoading(false))
   }, [token])
+
+  // Plans built by an older version of the engine are rebuilt from the
+  // user's SAME saved answers once loading settles, so existing users get
+  // the full routine/library without re-entering anything. Their goals
+  // and intensity are untouched — only the plan generator improved.
+  useEffect(() => {
+    if (loading || !plan || !answers) return
+    if ((plan.engineVersion ?? 1) < ENGINE_VERSION) savePlan(answers, { source: 'engine_upgrade' })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, plan, answers])
 
   async function savePlan(newAnswers, { source = 'onboarding' } = {}) {
     const newPlan = generatePlan(newAnswers)

@@ -1,103 +1,85 @@
-import { useState } from 'react'
+import { Brain, Smartphone, BookOpen, Feather } from 'lucide-react'
+import { SectionCard, Field, ChipGroup, Segmented, NumberInput, Toggle, TextInput } from '../ui'
+import {
+  MENTAL_FOCUS_AREAS,
+  DAILY_MINUTES,
+  DISTRACTIONS,
+  READING_FREQUENCY,
+  READING_FORMATS,
+  READING_TOPICS,
+  MEDITATION_EXPERIENCE,
+} from '../../lib/plan/options'
 
-const FOCUS_AREAS = [
-  { id: 'discipline', label: 'Discipline' },
-  { id: 'confidence', label: 'Confidence' },
-  { id: 'consistency', label: 'Consistency' },
-  { id: 'mentalResilience', label: 'Mental resilience' },
-  { id: 'reducingProcrastination', label: 'Reducing procrastination' },
-  { id: 'improvingFocus', label: 'Improving focus' },
-  { id: 'timeManagement', label: 'Time management' },
-  { id: 'buildingHabits', label: 'Building better habits' },
-  { id: 'reducingScreenTime', label: 'Reducing screen time' },
-]
+export default function MentalGoalsStep({ answers, update }) {
+  const m = answers.mentalGoals
+  const set = (patch) => update('mentalGoals', patch)
 
-export default function MentalGoalsStep({ initial, onNext, onBack }) {
-  const [focusAreas, setFocusAreas] = useState(initial.focusAreas ?? [])
-  const [readingInterest, setReadingInterest] = useState(initial.readingInterest ?? true)
-  const [journalingInterest, setJournalingInterest] = useState(initial.journalingInterest ?? false)
-  const [screenTimeTargetHoursPerDay, setScreenTimeTargetHoursPerDay] = useState(initial.screenTimeTargetHoursPerDay ?? '')
-  const [weaknessesFreeText, setWeaknessesFreeText] = useState(initial.weaknessesFreeText ?? '')
-
-  const chipClass = (active) =>
-    `rounded-full px-3 py-1.5 text-sm border transition-colors ${
-      active ? 'bg-[var(--accent)] border-[var(--accent)] text-white' : 'bg-[var(--ink-900)] border-[var(--ink-700)] text-[var(--ink-300)]'
-    }`
-  const inputClass =
-    'w-full rounded-lg bg-[var(--ink-900)] border border-[var(--ink-700)] px-3 py-2 text-[var(--ink-50)] focus:outline-none focus:border-[var(--accent)] transition-colors'
-
-  function toggle(value) {
-    setFocusAreas((prev) => (prev.includes(value) ? prev.filter((v) => v !== value) : [...prev, value]))
-  }
-
-  function submit() {
-    onNext({
-      focusAreas,
-      readingInterest,
-      journalingInterest,
-      screenTimeTargetHoursPerDay: screenTimeTargetHoursPerDay === '' ? null : Number(screenTimeTargetHoursPerDay),
-      weaknessesFreeText,
-    })
+  function setFocus(focusAreas) {
+    const priorityFocus = focusAreas.includes(m.priorityFocus) ? m.priorityFocus : focusAreas[0] ?? null
+    set({ focusAreas, priorityFocus })
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <label className="block text-sm text-[var(--ink-300)] mb-1.5">What do you want to work on outside of fitness? (pick any)</label>
-        <div className="flex gap-2 flex-wrap">
-          {FOCUS_AREAS.map((f) => (
-            <button key={f.id} type="button" onClick={() => toggle(f.id)} className={chipClass(focusAreas.includes(f.id))}>
-              {f.label}
-            </button>
-          ))}
+    <div className="space-y-4">
+      <SectionCard icon={Brain} title="What to work on" hint="Each area becomes a small, specific daily or weekly action — not a vague intention.">
+        <Field label="Pick the areas you want to improve">
+          <ChipGroup options={MENTAL_FOCUS_AREAS} value={m.focusAreas} onChange={setFocus} multi />
+        </Field>
+        {m.focusAreas.length > 1 && (
+          <Field label="Your #1 priority" hint="This one always makes it into your day first.">
+            <ChipGroup
+              options={MENTAL_FOCUS_AREAS.filter((o) => m.focusAreas.includes(o.id))}
+              value={m.priorityFocus}
+              onChange={(priorityFocus) => set({ priorityFocus: priorityFocus ?? m.focusAreas[0] })}
+            />
+          </Field>
+        )}
+        <Field label="Minutes a day for personal development" hint="We fit your daily tasks into this — piling on too many at once is a common reason habits fail.">
+          <Segmented options={DAILY_MINUTES.map((n) => ({ id: n, label: `${n}` }))} value={m.dailyMinutesAvailable} onChange={(dailyMinutesAvailable) => set({ dailyMinutesAvailable })} />
+        </Field>
+      </SectionCard>
+
+      <SectionCard icon={Smartphone} title="Screen time & distractions" hint="Check your phone's screen-time settings for your real daily average.">
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Daily screen time now" optional>
+            <NumberInput value={m.currentScreenTimeHours} onChange={(currentScreenTimeHours) => set({ currentScreenTimeHours })} min={0} max={20} step={0.5} suffix="hrs" />
+          </Field>
+          <Field label="Your target" optional>
+            <NumberInput value={m.screenTimeTargetHoursPerDay} onChange={(screenTimeTargetHoursPerDay) => set({ screenTimeTargetHoursPerDay })} min={0} max={20} step={0.5} suffix="hrs" />
+          </Field>
         </div>
-      </div>
+        <Field label="What pulls your attention most?" optional>
+          <ChipGroup options={DISTRACTIONS} value={m.distractions} onChange={(distractions) => set({ distractions })} multi />
+        </Field>
+      </SectionCard>
 
-      <div className="flex gap-4">
-        <label className="flex items-center gap-2 text-sm text-[var(--ink-200)]">
-          <input type="checkbox" checked={readingInterest} onChange={(e) => setReadingInterest(e.target.checked)} />
-          Daily reading
-        </label>
-        <label className="flex items-center gap-2 text-sm text-[var(--ink-200)]">
-          <input type="checkbox" checked={journalingInterest} onChange={(e) => setJournalingInterest(e.target.checked)} />
-          Daily journaling
-        </label>
-      </div>
+      <SectionCard icon={BookOpen} title="Reading">
+        <Toggle checked={m.readingInterest} onChange={(readingInterest) => set({ readingInterest })} label="Add daily reading to my plan" />
+        {m.readingInterest && (
+          <>
+            <Field label="How often do you read now?">
+              <ChipGroup options={READING_FREQUENCY} value={m.readingFrequency} onChange={(readingFrequency) => set({ readingFrequency })} />
+            </Field>
+            <Field label="Favorite format">
+              <ChipGroup options={READING_FORMATS} value={m.readingFormat} onChange={(readingFormat) => set({ readingFormat: readingFormat ?? 'physical' })} />
+            </Field>
+            <Field label="Topics you'd enjoy" hint="These build your personal reading list.">
+              <ChipGroup options={READING_TOPICS} value={m.readingTopics} onChange={(readingTopics) => set({ readingTopics })} multi />
+            </Field>
+          </>
+        )}
+      </SectionCard>
 
-      {focusAreas.includes('reducingScreenTime') && (
-        <div>
-          <label className="block text-sm text-[var(--ink-300)] mb-1.5">Target screen time per day (hours)</label>
-          <input
-            type="number"
-            min={0}
-            step={0.5}
-            value={screenTimeTargetHoursPerDay}
-            onChange={(e) => setScreenTimeTargetHoursPerDay(e.target.value)}
-            className={inputClass}
-          />
-        </div>
-      )}
-
-      <div>
-        <label className="block text-sm text-[var(--ink-300)] mb-1.5">
-          Anything you'd like to change about yourself? (optional — shown back to you, never used to pick tasks automatically)
-        </label>
-        <textarea
-          value={weaknessesFreeText}
-          onChange={(e) => setWeaknessesFreeText(e.target.value)}
-          rows={3}
-          className={inputClass}
-        />
-      </div>
-
-      <div className="flex gap-3">
-        <button onClick={onBack} className="flex-1 rounded-lg border border-[var(--ink-700)] text-[var(--ink-300)] py-2.5 hover:text-[var(--ink-50)] transition-colors">
-          Back
-        </button>
-        <button onClick={submit} className="flex-1 rounded-lg bg-[var(--accent)] hover:bg-[var(--accent-strong)] text-white font-medium py-2.5 transition-colors">
-          Continue
-        </button>
-      </div>
+      <SectionCard icon={Feather} title="Reflection & calm">
+        <Toggle checked={m.journalingInterest} onChange={(journalingInterest) => set({ journalingInterest })} label="Add a short daily journal" />
+        <Field label="Meditation experience">
+          <ChipGroup options={MEDITATION_EXPERIENCE} value={m.meditationExperience} onChange={(meditationExperience) => set({ meditationExperience: meditationExperience ?? 'never' })} />
+        </Field>
+        <Toggle checked={m.meditationInterest} onChange={(meditationInterest) => set({ meditationInterest })} label="Add daily meditation" hint="Starts at 5 minutes for beginners." />
+        <Field label="Anything you'd like to change about yourself?" optional hint="Shown back to you as a reminder — never used to pick tasks automatically.">
+          <TextInput multiline rows={2} value={m.weaknessesFreeText} onChange={(weaknessesFreeText) => set({ weaknessesFreeText })} />
+        </Field>
+      </SectionCard>
     </div>
   )
 }

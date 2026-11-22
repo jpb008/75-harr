@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Palette, Bell, Flame, UserRound } from 'lucide-react'
+import { SectionCard } from './ui'
 import { DEFAULT_TASKS, TASK_ICONS, TASK_COLORS } from '../lib/challenge'
 import { ACCENT_PRESETS } from '../lib/accent'
 import { BACKGROUND_PRESETS } from '../lib/background'
@@ -83,10 +85,11 @@ export default function SettingsView({
     'w-full rounded-lg bg-[var(--ink-900)] border border-[var(--ink-700)] px-3 py-2 text-[var(--ink-50)] focus:outline-none focus:border-[var(--accent)] transition-colors'
 
   return (
-    <div className="max-w-xl mx-auto px-4 py-8">
-      <h2 className="font-display text-3xl text-[var(--ink-50)] mb-6">Settings</h2>
+    <div className="max-w-xl mx-auto px-4 pt-6 pb-4">
+      <h1 className="font-display text-5xl leading-none text-[var(--ink-50)] mb-6">Settings</h1>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
+        <SectionCard icon={Palette} title="Look & feel">
         <div>
           <label className="block text-sm text-[var(--ink-300)] mb-2">Appearance</label>
           <div className="inline-flex rounded-lg border border-[var(--ink-700)] p-0.5 bg-[var(--ink-900)]">
@@ -104,6 +107,24 @@ export default function SettingsView({
           </div>
         </div>
 
+        <ColorPicker
+          label="Background color"
+          hint="Retints the dark base (surfaces, borders, text) — everything else stays the same."
+          presets={BACKGROUND_PRESETS}
+          value={backgroundColor}
+          onChange={onBackgroundChange}
+        />
+
+        <ColorPicker
+          label="Accent color"
+          hint="Changes the accent only — the dark base stays whatever you set above."
+          presets={ACCENT_PRESETS}
+          value={accentColor}
+          onChange={onAccentChange}
+        />
+        </SectionCard>
+
+        <SectionCard icon={Bell} title="Reminders">
         <div>
           <div className="flex items-center justify-between mb-2">
             <label className="block text-sm text-[var(--ink-300)]">Notifications</label>
@@ -137,21 +158,9 @@ export default function SettingsView({
           </p>
         </div>
 
-        <ColorPicker
-          label="Background color"
-          hint="Retints the dark base (surfaces, borders, text) — everything else stays the same."
-          presets={BACKGROUND_PRESETS}
-          value={backgroundColor}
-          onChange={onBackgroundChange}
-        />
+        </SectionCard>
 
-        <ColorPicker
-          label="Accent color"
-          hint="Changes the accent only — the dark base stays whatever you set above."
-          presets={ACCENT_PRESETS}
-          value={accentColor}
-          onChange={onAccentChange}
-        />
+        <SectionCard icon={Flame} title="Your challenge" hint="The classic all-or-nothing daily checklist.">
 
         <div>
           <label className="block text-sm text-[var(--ink-300)] mb-1.5">Challenge name</label>
@@ -217,7 +226,7 @@ export default function SettingsView({
               onChange={(e) => setNewTaskLabel(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && addTask()}
               placeholder="Add a new daily task..."
-              className={`flex-1 text-sm placeholder:text-[var(--ink-400)] ${inputClass}`}
+              className={`flex-1 min-w-0 text-sm placeholder:text-[var(--ink-400)] ${inputClass}`}
             />
             <button
               onClick={addTask}
@@ -235,9 +244,12 @@ export default function SettingsView({
         >
           Save changes
         </button>
+        </SectionCard>
 
-        <div className="pt-6 border-t border-[var(--ink-800)] space-y-3">
-          <p className="text-sm text-[var(--ink-300)]">Account{email ? `: ${email}` : ''}</p>
+        <SectionCard icon={UserRound} title="Account">
+
+        <div className="space-y-3">
+          <p className="text-sm text-[var(--ink-300)] break-all">{email ?? ''}</p>
           <div className="flex gap-2">
             <button
               onClick={exportData}
@@ -254,7 +266,9 @@ export default function SettingsView({
           </div>
         </div>
 
-        <div className="pt-6 border-t border-[var(--ink-800)]">
+        </SectionCard>
+
+        <div className="pt-2 px-1">
           {!confirmRestart ? (
             <button onClick={() => setConfirmRestart(true)} className="text-sm text-[var(--danger)] hover:opacity-80">
               Give up and restart from Day 1

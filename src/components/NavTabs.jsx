@@ -1,35 +1,38 @@
+import { Flame, ClipboardList, BarChart3, Target, Settings } from 'lucide-react'
+
 const TABS = [
-  { id: 'today', label: 'Today' },
-  { id: 'goals', label: 'Goals' },
-  { id: 'progress', label: 'Progress' },
-  { id: 'plan', label: 'Plan' },
-  { id: 'settings', label: 'Settings' },
+  { id: 'today', label: 'Today', icon: Flame },
+  { id: 'plan', label: 'Plan', icon: ClipboardList },
+  { id: 'progress', label: 'Progress', icon: BarChart3 },
+  { id: 'goals', label: 'Goals', icon: Target },
+  { id: 'settings', label: 'Settings', icon: Settings },
 ]
 
+// A fixed bottom bar: icon + short label per tab fits five tabs even on a
+// 320px-wide phone, and sits where thumbs already are.
 export default function NavTabs({ active, onChange }) {
   return (
-    <nav className="sticky top-0 z-10 bg-[var(--ink-950)]/85 backdrop-blur border-b border-[var(--ink-800)]">
-      <div className="max-w-xl mx-auto flex items-center px-4">
-        <span className="font-display text-lg text-[var(--accent-light)] pr-3 select-none shrink-0">75<span className="text-[var(--ink-100)]">HARD</span></span>
-        {/* overflow-x-auto + min-w-fit: tabs share the width evenly when
-            there's room, but never shrink below readable text (which is
-            what caused labels to visually overlap at narrow phone
-            widths) — any overflow scrolls instead of colliding. */}
-        <div className="flex flex-1 overflow-x-auto">
-          {TABS.map((tab) => (
+    <nav className="fixed bottom-0 inset-x-0 z-30 bg-[var(--ink-950)]/90 backdrop-blur-md border-t border-[var(--ink-800)] pb-[env(safe-area-inset-bottom)]">
+      <div className="max-w-xl mx-auto grid grid-cols-5">
+        {TABS.map(({ id, label, icon: Icon }) => {
+          const isActive = active === id
+          return (
             <button
-              key={tab.id}
-              onClick={() => onChange(tab.id)}
-              className={`flex-1 min-w-fit whitespace-nowrap px-2.5 py-3.5 text-sm font-medium border-b-2 transition-colors ${
-                active === tab.id
-                  ? 'border-[var(--accent)] text-[var(--ink-50)]'
-                  : 'border-transparent text-[var(--ink-300)] hover:text-[var(--ink-100)]'
+              key={id}
+              onClick={() => onChange(id)}
+              aria-current={isActive ? 'page' : undefined}
+              className={`relative flex flex-col items-center gap-1 pt-2.5 pb-2 text-[11px] font-medium transition-colors ${
+                isActive ? 'text-[var(--ink-50)]' : 'text-[var(--ink-400)] hover:text-[var(--ink-100)]'
               }`}
             >
-              {tab.label}
+              {isActive && <span className="absolute top-0 h-0.5 w-8 rounded-full bg-[var(--accent)]" />}
+              <span className={`flex h-7 w-12 items-center justify-center rounded-full transition-colors ${isActive ? 'bg-[var(--accent-a15)] text-[var(--accent-light)]' : ''}`}>
+                <Icon size={19} strokeWidth={isActive ? 2.4 : 2} />
+              </span>
+              {label}
             </button>
-          ))}
-        </div>
+          )
+        })}
       </div>
     </nav>
   )

@@ -23,7 +23,7 @@ import StartScreen from './components/StartScreen'
 import AuthScreen from './components/AuthScreen'
 import OnboardingFlow from './components/onboarding/OnboardingFlow'
 import WeeklyReviewModal from './components/WeeklyReviewModal'
-import PlanSettingsView from './components/PlanSettingsView'
+import PlanView from './components/plan/PlanView'
 
 export default function App() {
   const auth = useAuth()
@@ -114,8 +114,7 @@ function AuthenticatedApp({ token, email, onLogout }) {
   }
 
   return (
-    <div className="min-h-screen">
-      <NavTabs active={tab} onChange={setTab} />
+    <div className="min-h-screen pb-24">
       {tab === 'today' && (
         <TodayView
           challenge={challenge}
@@ -131,6 +130,11 @@ function AuthenticatedApp({ token, email, onLogout }) {
           notificationsEnabled={notifications.enabled}
           plan={plan.plan}
           planDayApi={planDayApi}
+          onOpenPlan={() => {
+            setTab('plan')
+            window.scrollTo({ top: 0 })
+          }}
+          motivationWhy={plan.answers?.fitnessGoals?.motivationWhy || null}
         />
       )}
       {tab === 'goals' && (
@@ -144,7 +148,7 @@ function AuthenticatedApp({ token, email, onLogout }) {
       {tab === 'progress' && (
         <ProgressView challenge={challenge} days={days} history={history} photoUrls={photos.urls} />
       )}
-      {tab === 'plan' && <PlanSettingsView plan={plan} onDone={() => setTab('today')} />}
+      {tab === 'plan' && <PlanView plan={plan} />}
       {tab === 'settings' && (
         <SettingsView
           challenge={challenge}
@@ -161,6 +165,7 @@ function AuthenticatedApp({ token, email, onLogout }) {
           onLogout={onLogout}
         />
       )}
+      <NavTabs active={tab} onChange={(next) => { setTab(next); window.scrollTo({ top: 0 }) }} />
       {reviewOpen && (
         <WeeklyReviewModal
           proposals={weeklyReview.proposals}

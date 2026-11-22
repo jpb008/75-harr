@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { Plus, X } from 'lucide-react'
 
 export default function GoalsView({ goals, addGoal, toggleGoal, removeGoal }) {
   const [newGoalText, setNewGoalText] = useState('')
@@ -11,7 +12,7 @@ export default function GoalsView({ goals, addGoal, toggleGoal, removeGoal }) {
   const doneCount = goals.filter((g) => g.done).length
 
   return (
-    <div className="max-w-xl mx-auto px-4 py-8">
+    <div className="max-w-xl mx-auto px-4 pt-6 pb-4">
       <h1 className="font-display text-5xl leading-none text-[var(--ink-50)] mt-1 mb-2">Goals</h1>
       <p className="text-[var(--ink-300)] text-sm mb-6 max-w-md">
         Things you're personally working toward — set your own, whenever you want. Unlike the daily checklist,
@@ -28,7 +29,7 @@ export default function GoalsView({ goals, addGoal, toggleGoal, removeGoal }) {
         {goals.map((goal) => (
           <li key={goal.id}>
             <label
-              className={`flex items-center gap-3 rounded-xl border border-dashed px-4 py-3.5 cursor-pointer transition-colors ${
+              className={`flex items-center gap-3 rounded-2xl border px-4 py-3.5 cursor-pointer transition-colors ${
                 goal.done
                   ? 'bg-[var(--accent-a10)] border-[var(--accent-a40)]'
                   : 'bg-[var(--ink-900)] border-[var(--ink-700)] hover:border-[var(--ink-600)]'
@@ -36,7 +37,7 @@ export default function GoalsView({ goals, addGoal, toggleGoal, removeGoal }) {
             >
               <input type="checkbox" checked={goal.done} onChange={() => toggleGoal(goal.id)} className="task-check" />
               <span
-                className={`flex-1 ${goal.done ? 'text-[var(--ink-200)] line-through decoration-[var(--ink-400)]' : 'text-[var(--ink-50)]'}`}
+                className={`flex-1 min-w-0 break-words ${goal.done ? 'text-[var(--ink-200)] line-through decoration-[var(--ink-400)]' : 'text-[var(--ink-50)]'}`}
               >
                 {goal.text}
               </span>
@@ -48,7 +49,7 @@ export default function GoalsView({ goals, addGoal, toggleGoal, removeGoal }) {
                 className="text-[var(--ink-400)] hover:text-[var(--danger)] px-1 transition-colors"
                 aria-label="Remove goal"
               >
-                ✕
+                <X size={16} />
               </button>
             </label>
           </li>
@@ -63,13 +64,13 @@ export default function GoalsView({ goals, addGoal, toggleGoal, removeGoal }) {
           onChange={(e) => setNewGoalText(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && submit()}
           placeholder="e.g. Run a 5k"
-          className="flex-1 rounded-lg bg-[var(--ink-900)] border border-[var(--ink-700)] px-3 py-2 text-sm text-[var(--ink-50)] placeholder:text-[var(--ink-400)] focus:outline-none focus:border-[var(--accent)] transition-colors"
+          className="flex-1 min-w-0 rounded-xl bg-[var(--ink-950)] border border-[var(--ink-700)] px-3.5 py-2.5 text-sm text-[var(--ink-50)] placeholder:text-[var(--ink-400)] focus:outline-none focus:border-[var(--accent)] transition-colors"
         />
         <button
           onClick={submit}
-          className="rounded-lg bg-[var(--ink-800)] hover:bg-[var(--ink-700)] border border-[var(--ink-700)] px-3 py-2 text-sm text-[var(--ink-100)] transition-colors"
+          className="shrink-0 inline-flex items-center gap-1 rounded-xl bg-gradient-to-b from-[var(--accent)] to-[var(--accent-strong)] px-3.5 py-2.5 text-sm font-semibold text-white transition-all active:scale-[0.98]"
         >
-          Add
+          <Plus size={16} /> Add
         </button>
       </div>
     </div>

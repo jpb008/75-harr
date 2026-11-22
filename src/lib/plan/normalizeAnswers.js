@@ -1,6 +1,6 @@
 import { SKILLS } from './options'
 
-export const QUESTIONNAIRE_VERSION = 3
+export const QUESTIONNAIRE_VERSION = 4
 
 const LEGACY_FITNESS_LEVEL_TO_EXPERIENCE = {
   beginner: 'under6mo',
@@ -78,6 +78,8 @@ export function normalizeAnswers(raw) {
     mealsPerDay: num(p.mealsPerDay) ?? 3,
     kitchenAccess: p.kitchenAccess ?? 'full',
     groceryBudget: p.groceryBudget ?? 'moderate',
+    shoppingFrequency: ['weekly', 'twice', 'biweekly'].includes(p.shoppingFrequency) ? p.shoppingFrequency : 'weekly',
+    shoppingStyle: ['cheapest', 'bulk', 'closest'].includes(p.shoppingStyle) ? p.shoppingStyle : 'cheapest',
     foodDislikes: arr(p.foodDislikes),
     foodDislikesOther: arr(p.foodDislikesOther)
       .filter((x) => typeof x === 'string' && x.trim())

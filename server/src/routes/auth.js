@@ -169,6 +169,12 @@ export async function handleDeleteAccount(request, env) {
   if (!user) return error('Unauthorized', 401)
   if (!(await verifyPassword(password ?? '', user.password_hash))) return error('Your password is wrong.', 403)
   const id = user.id
+  // share_links exists once migration 0009 has run.
+  try {
+    await env.DB.prepare('DELETE FROM share_links WHERE user_id = ?1').bind(id).run()
+  } catch {
+    // table not created yet
+  }
   await env.DB.batch([
     env.DB.prepare('DELETE FROM recovery_codes WHERE user_id = ?1').bind(id),
     env.DB.prepare('DELETE FROM subscriptions WHERE user_id = ?1').bind(id),

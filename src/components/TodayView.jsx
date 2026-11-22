@@ -7,7 +7,7 @@ import ShareCardModal from './ShareCardModal'
 import TodayPlanSection from './TodayPlanSection'
 import WaterSleepCard from './WaterSleepCard'
 import { lowSleepAdvice } from '../lib/dailyHealth'
-import { Flame, CheckCircle2, Share2 } from 'lucide-react'
+import { Flame, CheckCircle2, Share2, Droplets, Camera } from 'lucide-react'
 import { Card, ProgressRing } from './ui'
 
 export default function TodayView({
@@ -33,6 +33,8 @@ export default function TodayView({
   answers,
   meals,
   health,
+  todayLayout,
+  onTodayLayoutChange,
   recoveryStatus,
   onOpenRecovery,
   reportBanner,
@@ -140,17 +142,7 @@ export default function TodayView({
         </p>
       )}
 
-      {health && (
-        <div className="mt-6">
-          <WaterSleepCard {...health} />
-        </div>
-      )}
-
-      <div className="mt-6">
-        <ProgressPhotoCard dateStr={todayDateStr} photoUrl={photoUrl} onSetPhoto={onSetPhoto} />
-      </div>
-
-      <p className="text-[var(--ink-400)] text-xs mt-2 text-center">
+      <p className="text-[var(--ink-400)] text-xs mt-4 text-center">
         Miss any task by midnight and the challenge resets to Day 1 automatically.
       </p>
 
@@ -167,6 +159,24 @@ export default function TodayView({
           answers={answers}
           meals={meals}
           sleepAdvice={health ? lowSleepAdvice(health.sleep) : null}
+          layout={todayLayout}
+          onLayoutChange={onTodayLayoutChange}
+          extraCards={{
+            water: health
+              ? {
+                  node: <WaterSleepCard {...health} />,
+                  done: health.waterMl >= health.goalMl - 1 && health.sleep.lastNight != null,
+                  summary: 'Water goal hit and sleep logged',
+                  icon: Droplets,
+                }
+              : { node: null },
+            photo: {
+              node: <ProgressPhotoCard dateStr={todayDateStr} photoUrl={photoUrl} onSetPhoto={onSetPhoto} />,
+              done: Boolean(photoUrl),
+              summary: "Today's progress photo taken",
+              icon: Camera,
+            },
+          }}
         />}
 
       {shareOpen && (

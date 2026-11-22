@@ -4,12 +4,15 @@ import { SectionCard, Toggle } from './ui'
 import { RecoveryCodesPanel } from './RecoveryCodes'
 import { SYNCED_KEYS } from '../hooks/useSync'
 import { ChangePasswordForm, DeleteAccount } from './AccountControls'
+import FriendLinkPanel from './FriendLinkPanel'
 
 const REMINDER_OPTIONS = [
   { id: 'workout', label: 'Workout reminder', hint: 'At your planned workout time, on training days, if not done yet.' },
   { id: 'evening', label: 'Evening check-in', hint: "9pm if checklist or habit tasks are left, 11pm if your streak is at risk." },
   { id: 'weeklyMoney', label: 'Weekly money moves', hint: "Saturday at noon, if this week's money actions aren't done." },
   { id: 'weighIn', label: 'Weekly weigh-in', hint: "Monday at wake-up, if you haven't weighed in this week." },
+  { id: 'water', label: 'Water check', hint: "3 pm, if you're under half your water goal. Only once you've started tracking water." },
+  { id: 'sleepLog', label: 'Log your sleep', hint: "An hour after you wake up, if you haven't logged last night. Only once you've started logging sleep." },
 ]
 import { DEFAULT_TASKS, TASK_ICONS, TASK_COLORS } from '../lib/challenge'
 import { ACCENT_PRESETS } from '../lib/accent'
@@ -53,6 +56,7 @@ export default function SettingsView({
   setRecoveryStatus,
   onTokenChange,
   onAccountDeleted,
+  onReplayTour,
 }) {
   const [name, setName] = useState(challenge.name)
   const [lengthDays, setLengthDays] = useState(challenge.lengthDays)
@@ -289,6 +293,7 @@ export default function SettingsView({
         <div className="space-y-3">
           <p className="text-sm text-[var(--ink-300)] break-all">{email ?? ''}</p>
           <RecoveryCodesPanel token={token} email={email} status={recoveryStatus} setStatus={setRecoveryStatus} />
+          <FriendLinkPanel token={token} />
           <ChangePasswordForm token={token} onTokenChange={onTokenChange} />
           <div className="flex gap-2">
             <button
@@ -304,6 +309,11 @@ export default function SettingsView({
               Log out
             </button>
           </div>
+          {onReplayTour && (
+            <button type="button" onClick={onReplayTour} className="w-full text-center text-sm text-[var(--ink-200)] hover:text-[var(--ink-50)] py-1">
+              Replay the quick tour
+            </button>
+          )}
           <DeleteAccount token={token} onDeleted={onAccountDeleted} />
         </div>
 

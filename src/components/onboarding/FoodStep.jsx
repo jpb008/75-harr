@@ -7,6 +7,8 @@ import {
   COOKING_TIME,
   KITCHEN_ACCESS,
   GROCERY_BUDGETS,
+  SHOPPING_FREQUENCY,
+  SHOPPING_STYLES,
   BREAKFAST_HABITS,
   MEAL_PREP_STYLES,
   MEAL_VARIETY,
@@ -157,6 +159,12 @@ export default function FoodStep({ answers, update }) {
       <SectionCard icon={ShoppingCart} title="Groceries">
         <Field label="Grocery budget">
           <OptionCards options={GROCERY_BUDGETS} value={p.groceryBudget} onChange={(groceryBudget) => set({ groceryBudget })} />
+        </Field>
+        <Field label="How often do you shop for groceries?" hint="Your grocery list is split into trips to match.">
+          <OptionCards options={SHOPPING_FREQUENCY} value={p.shoppingFrequency ?? 'weekly'} onChange={(shoppingFrequency) => set({ shoppingFrequency })} />
+        </Field>
+        <Field label="Where do you like to shop?">
+          <OptionCards options={SHOPPING_STYLES} value={p.shoppingStyle ?? 'cheapest'} onChange={(shoppingStyle) => set({ shoppingStyle })} />
         </Field>
       </SectionCard>
     </div>

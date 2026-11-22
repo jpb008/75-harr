@@ -431,3 +431,15 @@ export const LEARNING_BUDGETS = [
 export function labelFor(options, id) {
   return options.find((o) => o.id === id)?.label ?? id
 }
+
+export const SHOPPING_FREQUENCY = [
+  { id: 'weekly', label: 'Once a week', hint: 'One shop covers Monday to Sunday' },
+  { id: 'twice', label: 'Twice a week', hint: 'Fresher food: one shop for Mon–Thu, one for Fri–Sun' },
+  { id: 'biweekly', label: 'Every two weeks', hint: 'One big shop; we lean on frozen and long-lasting food' },
+]
+
+export const SHOPPING_STYLES = [
+  { id: 'cheapest', label: 'Cheapest stores', hint: "I'll go where it's cheapest (No Frills, Walmart, Aldi…)" },
+  { id: 'bulk', label: 'Bulk / warehouse', hint: 'I can buy big packs (Costco and similar)' },
+  { id: 'closest', label: "Whatever's closest", hint: 'Convenience first; show me how to save there' },
+]

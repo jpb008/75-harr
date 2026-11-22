@@ -72,7 +72,9 @@ export default function PlanView({ plan: planApi, meals, initialSection = 'worko
             <div>
               <p className="text-sm font-semibold text-[var(--ink-50)]">Get a more personalized plan</p>
               <p className="text-sm text-[var(--ink-200)] mt-1">
-                {(answers?.meta?.questionnaireVersion ?? 1) >= 2
+                {(answers?.meta?.questionnaireVersion ?? 1) >= 3
+                  ? 'New: a smarter grocery list. Tell us how often you shop and where (Food & meal plan step) and we\'ll split it into trips with the cheapest way to buy each item.'
+                  : (answers?.meta?.questionnaireVersion ?? 1) >= 2
                   ? 'New: a 7-day meal plan with recipes and a grocery list. Answer a few food questions (kitchen, budget, foods you avoid, cuisines) to build it around you.'
                   : 'We now ask much more detailed questions — fitness check, schedule, equipment, sleep, food, learning style and more.'}{' '}
                 Your current answers are pre-filled; just fill in the new ones.

@@ -180,3 +180,53 @@ export function personalRecords(workoutLogs, unit) {
     .map(([id, b]) => ({ exerciseId: id, name: exerciseById(id)?.name ?? id, value: Math.round(b.value), weighted: b.weighted, detail: b.detail, date: b.date, unit: b.weighted ? unit : repWord(id) }))
     .sort((a, b) => b.date.localeCompare(a.date))
 }
+
+// ── Target goals ───────────────────────────────────────────────────────
+
+const DAY = 86400000
+const dayNum = (d) => Math.round(new Date(`${d}T12:00:00`).getTime() / DAY)
+const dateFromNum = (n) => new Date(n * DAY).toISOString().slice(0, 10)
+
+// Current value and recent rate of change for a target goal's measure.
+function seriesForTarget(goal, { workoutLogs, weighIns, unit }) {
+  if (goal.kind === 'weight') return weightSeries(weighIns, unit)
+  return liftSeries(workoutLogs, goal.exerciseId, unit).points
+}
+
+// Progress and a projected finish date from the last ~8 weeks' trend.
+export function targetProgress(goal, data) {
+  const points = seriesForTarget(goal, data)
+  const current = points.length ? points[points.length - 1].value : null
+  const start = goal.startValue ?? (points.length ? points[0].value : null)
+  const target = goal.target
+  if (current == null) return { current: null, start, target, pct: 0, status: 'noData' }
+
+  const span = target - start
+  const pct = span === 0 ? 100 : Math.max(0, Math.min(100, Math.round(((current - start) / span) * 100)))
+  const reached = span >= 0 ? current >= target : current <= target
+  if (reached) return { current, start, target, pct: 100, status: 'reached' }
+
+  const today = dayNum(data.todayStr)
+  const recent = points.filter((p) => today - dayNum(p.date) <= 56)
+  let perWeek = null
+  if (recent.length >= 3 && dayNum(recent[recent.length - 1].date) - dayNum(recent[0].date) >= 10) {
+    const xs = recent.map((p) => dayNum(p.date))
+    const ys = recent.map((p) => p.value)
+    const mx = xs.reduce((a, b) => a + b, 0) / xs.length
+    const my = ys.reduce((a, b) => a + b, 0) / ys.length
+    const den = xs.reduce((a, x) => a + (x - mx) ** 2, 0)
+    const slope = den ? xs.reduce((a, x, i) => a + (x - mx) * (ys[i] - my), 0) / den : 0
+    perWeek = slope * 7
+  }
+  const remaining = target - current
+  const deadlineDays = goal.deadline ? dayNum(goal.deadline) - today : null
+  const neededPerWeek = deadlineDays && deadlineDays > 0 ? (remaining / deadlineDays) * 7 : null
+
+  if (perWeek == null) return { current, start, target, pct, status: 'needMoreData', neededPerWeek }
+  const towards = Math.sign(perWeek) === Math.sign(remaining) && Math.abs(perWeek) > 0.01
+  if (!towards) return { current, start, target, pct, status: 'offTrack', perWeek, neededPerWeek }
+  const etaDays = Math.ceil((remaining / perWeek) * 7)
+  const eta = dateFromNum(today + etaDays)
+  const status = goal.deadline ? (eta <= goal.deadline ? 'onTrack' : 'behind') : 'onTrack'
+  return { current, start, target, pct, status, perWeek, eta, neededPerWeek }
+}

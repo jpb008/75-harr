@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Plus, X } from 'lucide-react'
 
-export default function GoalsView({ goals, addGoal, toggleGoal, removeGoal }) {
+export default function GoalsView({ goals, addGoal, toggleGoal, removeGoal, targetsSlot }) {
   const [newGoalText, setNewGoalText] = useState('')
 
   function submit() {
@@ -19,6 +19,9 @@ export default function GoalsView({ goals, addGoal, toggleGoal, removeGoal }) {
         there's no streak and nothing resets if you miss one.
       </p>
 
+      {targetsSlot && <div className="mb-8">{targetsSlot}</div>}
+
+      <h2 className="text-xs uppercase tracking-[0.15em] text-[var(--ink-300)] font-semibold mb-3 px-1">Personal goals</h2>
       {goals.length > 0 && (
         <p className="text-sm text-[var(--ink-300)] mb-3 tabular-nums">
           {doneCount} / {goals.length} done

@@ -1,6 +1,7 @@
 import { useState } from 'react'
-import { UtensilsCrossed, ShoppingCart, ChefHat, Info, Dumbbell, Shuffle, Undo2 } from 'lucide-react'
-import { SectionCard, Disclosure, Pill, IconBadge, Button } from '../ui'
+import { UtensilsCrossed, ChefHat, Info, Dumbbell, Shuffle, Undo2 } from 'lucide-react'
+import { SectionCard, Disclosure, Pill, Button } from '../ui'
+import GroceryList from './GroceryList'
 
 const DAY_SHORT = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']
 
@@ -166,24 +167,11 @@ export default function MealPlanView({ mealPlan, meals }) {
         </SectionCard>
       )}
 
-      <div>
-        <Disclosure title="Grocery list for the week" subtitle="Everything for all 7 days, grouped by store section" left={<IconBadge icon={ShoppingCart} size="sm" />}>
-          <div className="space-y-3">
-            {mealPlan.groceryList.map((group) => (
-              <div key={group.category}>
-                <p className="text-xs font-semibold uppercase tracking-wide text-[var(--ink-300)] mb-1">{group.category}</p>
-                <ul className="space-y-0.5">
-                  {group.items.map((item) => (
-                    <li key={item.id} className="text-sm text-[var(--ink-100)]">
-                      {showNumbers ? item.display : item.name}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
-          </div>
-        </Disclosure>
-      </div>
+      {meals?.shoppingPlan && (
+        <div id="grocery-list" className="scroll-mt-4">
+          <GroceryList plan={meals.shoppingPlan} checked={meals.groceryChecked} onToggle={meals.toggleGrocery} onClear={meals.clearGroceries} />
+        </div>
+      )}
 
       {mealPlan.notes.map((note, i) => (
         <p key={i} className="flex gap-2 text-sm text-[var(--ink-200)] px-1">

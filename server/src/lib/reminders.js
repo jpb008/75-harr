@@ -16,7 +16,23 @@ function shiftDate(dateStr, days) {
   return new Date(Date.parse(`${dateStr}T00:00:00Z`) + days * DAY_MS).toISOString().slice(0, 10)
 }
 
-export const DEFAULT_PREFS = { workout: true, evening: true, weeklyMoney: true, weighIn: true }
+export const DEFAULT_PREFS = { workout: true, evening: true, weeklyMoney: true, weighIn: true, water: true, sleepLog: true }
+
+const GALLON_ML = 3785.41
+
+// Same goal as the app: a gallon if the challenge has a gallon task,
+// otherwise the plan's drinks estimate.
+function waterGoalMl(state, plan) {
+  if (state.challenge?.tasks?.some((t) => /gallon/i.test(t.label))) return GALLON_ML
+  const liters = plan?.nutrition?.hydration?.litersPerDayRange?.[0]
+  return liters ? Math.round((liters * 800) / 50) * 50 : 2500
+}
+
+// Only nudge about trackers the user actually uses (logged in the last week).
+function usedRecently(health, date, field) {
+  for (let i = 0; i <= 7; i += 1) if (health?.[shiftDate(date, -i)]?.[field] != null) return true
+  return false
+}
 
 export function localClock(nowUtc, tzOffsetMinutes) {
   const local = new Date(nowUtc.getTime() - tzOffsetMinutes * 60 * 1000)
@@ -80,6 +96,24 @@ export function dueReminders({ clock, state = {}, plan = null }) {
     const recent = Object.keys(state.weighIns ?? {}).some((d) => d > shiftDate(clock.date, -6))
     if (clock.hour === wakeHour && !recent) {
       due.push({ kind: 'weighIn', title: 'Weekly weigh-in', body: 'Weigh in before breakfast and log it in the Progress tab.', tag: 'weigh-in' })
+    }
+  }
+
+  // 3 pm: under half the water goal.
+  const health = state.dailyHealth ?? {}
+  if (prefs.water && clock.hour === 15 && usedRecently(health, clock.date, 'waterMl')) {
+    const goal = waterGoalMl(state, plan)
+    const had = health[clock.date]?.waterMl ?? 0
+    if (had < goal / 2) {
+      const oz = Math.round((goal - had) / 29.5735)
+      due.push({ kind: 'water', title: 'Water check', body: `You're under half your water goal. About ${oz} oz to go — refill your bottle now.`, tag: 'water' })
+    }
+  }
+
+  // An hour after waking: log last night's sleep.
+  if (prefs.sleepLog && plan && clock.hour === hourOf(plan.schedule?.wakeTime, 7) + 1 && usedRecently(health, shiftDate(clock.date, -1), 'sleepHours')) {
+    if (health[clock.date]?.sleepHours == null) {
+      due.push({ kind: 'sleepLog', title: 'How did you sleep?', body: "Log last night's hours on the Today screen. It shapes today's workout advice.", tag: 'sleep' })
     }
   }
 

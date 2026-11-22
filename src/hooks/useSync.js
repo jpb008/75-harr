@@ -25,6 +25,11 @@ const SYNCED_KEY_DEFAULTS = {
   mealSwaps: {},
   mealChecks: {},
   dailyHealth: {},
+  groceryChecks: {},
+  todayLayout: {},
+  targetGoals: [],
+  shareSnapshot: null,
+  tourSeen: false,
 }
 export const SYNCED_KEYS = Object.keys(SYNCED_KEY_DEFAULTS)
 

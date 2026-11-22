@@ -1,8 +1,9 @@
-import { Moon, Dumbbell, HeartPulse, BedDouble, Brain, Wallet, Apple, ChevronRight, Check, Quote, Footprints, NotebookPen, Zap, ShieldCheck } from 'lucide-react'
+import { SlidersHorizontal, Moon, Dumbbell, HeartPulse, BedDouble, Brain, Wallet, Apple, ChevronRight, Check, Quote, Footprints, NotebookPen, Zap, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
 import { mealCheckKey } from '../hooks/useMeals'
 import Disclaimer from './Disclaimer'
 import WorkoutLogger from './WorkoutLogger'
+import TodayCustomizer, { DEFAULT_ORDER } from './TodayCustomizer'
 import { Card, IconBadge } from './ui'
 
 function CheckRow({ checked, onChange, children, extra }) {
@@ -40,8 +41,10 @@ function formatReps(ex) {
   return ex.unit === 'seconds' ? `${ex.sets}×${range}s` : ex.unit === 'perSide' ? `${ex.sets}×${range}/side` : `${ex.sets}×${range}`
 }
 
-export default function TodayPlanSection({ plan, planDayApi, onOpenPlan, motivationWhy, workoutLogs = {}, weightUnit = 'lb', onSaveWorkoutLog, todayDateStr, injuries = [], meals, sleepAdvice }) {
+export default function TodayPlanSection({ plan, planDayApi, onOpenPlan, motivationWhy, workoutLogs = {}, weightUnit = 'lb', onSaveWorkoutLog, todayDateStr, injuries = [], meals, sleepAdvice, layout, onLayoutChange, extraCards = {} }) {
   const [loggerOpen, setLoggerOpen] = useState(false)
+  const [customizing, setCustomizing] = useState(false)
+  const [expanded, setExpanded] = useState(() => new Set())
   const mealPlan = meals?.mealPlan
   const todaysMeals = mealPlan ? { showNumbers: mealPlan.showNumbers, day: mealPlan.days.find((d) => d.dayOfWeek === new Date().getDay()) } : null
   const eaten = new Set(meals?.checks?.[todayDateStr] ?? [])
@@ -63,23 +66,17 @@ export default function TodayPlanSection({ plan, planDayApi, onOpenPlan, motivat
   const doneMoney = financialActions.filter((a) => isFinancialDone(a.id)).length
   const workoutDone = todayRecord.workout.completed
 
-  return (
-    <div className="mt-8 space-y-4">
-      <div className="flex items-center justify-between px-1">
-        <h2 className="text-xs uppercase tracking-[0.15em] text-[var(--ink-300)] font-semibold">Your plan today</h2>
-        <button type="button" onClick={() => onOpenPlan()} className="text-xs font-medium text-[var(--accent-light)] inline-flex items-center gap-0.5">
-          Full plan <ChevronRight size={14} />
-        </button>
-      </div>
-
-      {motivationWhy && (
+  // Each card, keyed for the user's chosen order. Finished cards can fold
+  // into a one-line summary.
+  const cards = {
+    quote: { node: (motivationWhy && (
         <Card className="p-3.5 flex gap-3">
           <Quote size={16} className="text-[var(--accent-light)] shrink-0 mt-0.5" />
           <p className="text-sm text-[var(--ink-200)] italic">{motivationWhy}</p>
         </Card>
-      )}
-
-      {todaysSession ? (
+      )), done: false },
+    workout: {
+      node: (todaysSession ? (
         <Card className={`p-4 ${workoutDone ? 'border-[var(--success-border)]' : ''}`}>
           <CardHeader
             icon={todaysSession.type === 'cardio' ? HeartPulse : Dumbbell}
@@ -197,9 +194,12 @@ export default function TodayPlanSection({ plan, planDayApi, onOpenPlan, motivat
             />
           </Card>
         )
-      )}
-
-      {dailyMentalTasks.length > 0 && (
+      )),
+      done: Boolean(todaysSession) && workoutDone,
+      summary: todaysSession ? `${todaysSession.label} done` : null,
+      icon: Dumbbell,
+    },
+    habits: { node: (dailyMentalTasks.length > 0 && (
         <Card className="p-4">
           <CardHeader icon={Brain} title="Mind & habits" subtitle={`${doneMental} of ${dailyMentalTasks.length} done`} />
           <div className="space-y-0.5 -mx-1">
@@ -210,9 +210,8 @@ export default function TodayPlanSection({ plan, planDayApi, onOpenPlan, motivat
             ))}
           </div>
         </Card>
-      )}
-
-      {financialActions.length > 0 && (
+      )), done: dailyMentalTasks.length > 0 && doneMental === dailyMentalTasks.length, summary: 'All habits done', icon: Brain },
+    money: { node: (financialActions.length > 0 && (
         <Card className="p-4">
           <CardHeader icon={Wallet} title="This week's money moves" subtitle={`${doneMoney} of ${financialActions.length} done this week`} />
           <div className="space-y-0.5 -mx-1">
@@ -229,9 +228,9 @@ export default function TodayPlanSection({ plan, planDayApi, onOpenPlan, motivat
           </div>
           <Disclaimer text={plan.financial.disclaimer} />
         </Card>
-      )}
-
-      {plan.nutrition && (
+      )), done: financialActions.length > 0 && doneMoney === financialActions.length, summary: "This week's money moves done", icon: Wallet },
+    meals: {
+      node: (plan.nutrition && (
         <Card className="p-4">
           <CardHeader
             icon={Apple}
@@ -301,7 +300,67 @@ export default function TodayPlanSection({ plan, planDayApi, onOpenPlan, motivat
           )}
           <Disclaimer text={plan.nutrition.disclaimer} />
         </Card>
+      )),
+      done: Boolean(todaysMeals?.day) && eatenCount === todaysMeals.day.meals.length,
+      summary: 'All meals eaten',
+      icon: Apple,
+    },
+    ...extraCards,
+  }
+
+  const order = [...(layout?.order ?? []), ...DEFAULT_ORDER].filter((id, i, all) => all.indexOf(id) === i && cards[id])
+  const hidden = new Set(layout?.hidden ?? [])
+  const foldDone = layout?.foldDone !== false
+
+  return (
+    <div className="mt-8 space-y-4">
+      <div className="flex items-center justify-between px-1">
+        <h2 className="text-xs uppercase tracking-[0.15em] text-[var(--ink-300)] font-semibold">Your plan today</h2>
+        <div className="flex items-center gap-3">
+          <button type="button" onClick={() => setCustomizing(true)} className="text-xs font-medium text-[var(--ink-300)] hover:text-[var(--ink-50)] inline-flex items-center gap-1">
+            <SlidersHorizontal size={13} /> Customize
+          </button>
+          <button type="button" onClick={() => onOpenPlan()} className="text-xs font-medium text-[var(--accent-light)] inline-flex items-center gap-0.5">
+            Full plan <ChevronRight size={14} />
+          </button>
+        </div>
+      </div>
+
+      {customizing && (
+        <TodayCustomizer
+          order={order}
+          hidden={hidden}
+          foldDone={foldDone}
+          available={order.filter((id) => cards[id].node)}
+          onChange={onLayoutChange}
+          onClose={() => setCustomizing(false)}
+        />
       )}
+
+      {order
+        .filter((id) => !hidden.has(id) && cards[id].node)
+        .map((id) => {
+          const card = cards[id]
+          if (foldDone && card.done && !expanded.has(id)) {
+            const Icon = card.icon ?? Check
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setExpanded((prev) => new Set(prev).add(id))}
+                className="w-full flex items-center gap-3 rounded-2xl border border-[var(--success-border)] bg-[var(--ink-900)] px-4 py-3 text-left"
+              >
+                <span className="h-7 w-7 rounded-lg bg-[var(--success-soft)] text-[var(--success)] flex items-center justify-center shrink-0">
+                  <Icon size={15} />
+                </span>
+                <span className="flex-1 min-w-0 text-sm font-medium text-[var(--ink-100)] truncate">{card.summary}</span>
+                <Check size={16} className="text-[var(--success)] shrink-0" />
+                <span className="text-xs text-[var(--ink-400)] shrink-0">Show</span>
+              </button>
+            )
+          }
+          return <div key={id}>{card.node}</div>
+        })}
     </div>
   )
 }

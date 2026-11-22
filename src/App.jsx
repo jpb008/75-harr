@@ -24,6 +24,8 @@ import { useRecoveryStatus } from './components/RecoveryCodes'
 import { useMeals } from './hooks/useMeals'
 import { findNewPRs } from './lib/plan/trends'
 import PrCelebration from './components/PrCelebration'
+import TargetGoals from './components/TargetGoals'
+import QuickTour from './components/QuickTour'
 import { waterGoalMl, waterTask, sleepSummary } from './lib/dailyHealth'
 import { previousMonthKey, reportMonths } from './lib/plan/monthlyReport'
 import { MonthlyReportBanner } from './components/MonthlyReport'
@@ -117,6 +119,11 @@ function AuthenticatedApp({ token, email, onLogout, onTokenChange, onAccountDele
   const meals = useMeals(plan.plan, plan.answers)
   const [prCelebration, setPrCelebration] = useState(null)
   const [dailyHealth, setDailyHealth] = useStoredState('dailyHealth', {})
+  const [todayLayout, setTodayLayout] = useStoredState('todayLayout', {})
+  const [targetGoals, setTargetGoals] = useStoredState('targetGoals', [])
+  // Shown once per account (synced, so not again on a new phone).
+  const [tourSeen, setTourSeen] = useStoredState('tourSeen', false)
+  const [tourOpen, setTourOpen] = useState(false)
   const [reportSeenMonth, setReportSeenMonthState] = useState(() => loadJSON('reportSeenMonth', null))
   const [reportMonth, setReportMonth] = useState(null)
 
@@ -173,6 +180,23 @@ function AuthenticatedApp({ token, email, onLogout, onTokenChange, onAccountDele
     updateTodayHealth({ waterMl: next, ...(tick ? { autoTicked: true } : {}) })
     if (tick) toggleTask(gallonTask.id)
   }
+
+  // What an accountability friend's link shows; synced with everything else.
+  useEffect(() => {
+    if (!challenge) return
+    const done = todayRecord.completedTaskIds.filter((id) => challenge.tasks.some((t) => t.id === id)).length
+    saveJSON('shareSnapshot', {
+      dayNumber,
+      lengthDays: challenge.lengthDays,
+      streak,
+      todayDone: todayComplete,
+      tasksDone: done,
+      tasksTotal: challenge.tasks.length,
+      date: todayDateStr,
+      finished: dayNumber >= challenge.lengthDays && todayComplete,
+      updatedAt: new Date().toISOString(),
+    })
+  }, [challenge, dayNumber, streak, todayComplete, todayRecord, todayDateStr])
 
   useEffect(() => {
     if (weeklyReview.isDue) {
@@ -238,6 +262,8 @@ function AuthenticatedApp({ token, email, onLogout, onTokenChange, onAccountDele
           answers={plan.answers}
           meals={meals}
           todayDateStr={todayDateStr}
+          todayLayout={todayLayout}
+          onTodayLayoutChange={setTodayLayout}
           health={{
             waterMl: todayHealth.waterMl ?? 0,
             goalMl: waterGoal,
@@ -275,6 +301,18 @@ function AuthenticatedApp({ token, email, onLogout, onTokenChange, onAccountDele
       )}
       {tab === 'goals' && (
         <GoalsView
+          targetsSlot={
+            <TargetGoals
+              targets={targetGoals}
+              setTargets={setTargetGoals}
+              workoutLogs={workoutLogs}
+              weighIns={weighIns}
+              plan={plan.plan}
+              unit={weightUnit}
+              allowWeight={Boolean(plan.answers) && !normalizeAnswers(plan.answers).meta.safeMode}
+              todayStr={todayDateStr}
+            />
+          }
           goals={goals.goals}
           addGoal={goals.addGoal}
           toggleGoal={goals.toggleGoal}
@@ -326,6 +364,15 @@ function AuthenticatedApp({ token, email, onLogout, onTokenChange, onAccountDele
           setRecoveryStatus={setRecoveryStatus}
           onTokenChange={onTokenChange}
           onAccountDeleted={onAccountDeleted}
+          onReplayTour={() => setTourOpen(true)}
+        />
+      )}
+      {(tourOpen || (!tourSeen && !reviewOpen)) && (
+        <QuickTour
+          onClose={() => {
+            setTourSeen(true)
+            setTourOpen(false)
+          }}
         />
       )}
       {prCelebration && <PrCelebration prs={prCelebration} onDismiss={() => setPrCelebration(null)} />}
